@@ -1,0 +1,13 @@
+name: LaberintoMobs
+version: 1.0.0
+main: com.laberinto.LaberintoMobs
+api-version: '26.1'
+description: Mobs agresivos automaticos dentro de una zona (laberinto).
+commands:
+  laberinto:
+    description: Configura la zona del laberinto
+    usage: /laberinto <pos1|pos2|info|limpiar|reload>
+    permission: laberinto.admin
+permissions:
+  laberinto.admin:
+    default: op

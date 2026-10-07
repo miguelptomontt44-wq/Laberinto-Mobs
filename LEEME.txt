@@ -1,0 +1,7 @@
+LaberintoMobs - plugin para Paper 26.3 (Java 25)
+
+1) Sube esta carpeta a GitHub (ver pasos en el chat) y descarga el .jar compilado.
+2) Pon el .jar en la carpeta "plugins" del servidor y reinicia.
+3) Parate en una esquina del laberinto (en el suelo): /laberinto pos1
+4) Ve a la esquina opuesta:                           /laberinto pos2
+5) Listo. Desde ahi funciona solo. Config: plugins/LaberintoMobs/config.yml

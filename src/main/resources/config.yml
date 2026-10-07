@@ -1,0 +1,31 @@
+# ===== LaberintoMobs =====
+# La zona se configura con los comandos /laberinto pos1 y /laberinto pos2
+# (o editando estos numeros a mano). Despues /laberinto reload.
+zona:
+  activa: false
+  mundo: world
+  min: {x: 0, y: 0, z: 0}
+  max: {x: 0, y: 0, z: 0}
+
+spawn:
+  intervalo-ticks: 30        # cada cuanto intenta spawnear (20 ticks = 1 segundo)
+  por-ciclo: 4               # mobs nuevos maximos por intento
+  max-total: 60              # mobs a la vez en todo el laberinto
+  max-por-jugador: 30        # mobs a la vez cerca de cada jugador
+  distancia-min: 8           # minimo de bloques al jugador
+  distancia-max: 28          # maximo de bloques al jugador
+  borrar-tras-segundos: 10   # segundos sin jugadores antes de borrar los mobs
+
+# Niveles: 0 = sin efecto, 1 = Fuerza I / Velocidad I, 2 = nivel II...
+efectos:
+  fuerza: 1
+  velocidad: 1
+
+# Probabilidad relativa de cada mob (mas alto = mas comun). 0 = no aparece.
+mobs:
+  pesos:
+    PIGLIN_BRUTE: 25
+    EVOKER: 20
+    WITHER_SKELETON: 25
+    ENDERMAN: 20
+    RAVAGER: 8
