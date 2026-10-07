@@ -29,3 +29,77 @@ mobs:
     WITHER_SKELETON: 25
     ENDERMAN: 20
     RAVAGER: 8
+
+# ===================================================================
+#  BOTIN (LOOT) DEL LABERINTO
+# ===================================================================
+# Cada cierto tiempo TODO el botin desaparece y aparece en otros lugares.
+# Se hace click (izq. o der.) sobre el cofre/cabeza para recibir el premio.
+# El color del brillo indica la rareza: gris=comun, celeste=raro,
+# morado=epico, dorado=legendario.
+loot:
+  activo: true
+  cantidad: 10               # cuantos cofres/cabezas hay a la vez
+  regenerar-minutos: 10      # cada cuanto cambian de lugar y se renuevan
+  apariencia: COFRE          # COFRE o CABEZA
+  tiradas-min: 1             # premios por cofre (minimo)
+  tiradas-max: 2             # premios por cofre (maximo)
+  separacion-minima: 6       # bloques minimos entre un cofre y otro
+  paredes-minimas: 1         # paredes pegadas al cofre (evita que salgan sobre los muros)
+  distancia-visible: 48      # a cuantos bloques de un jugador se "materializan"
+  avisar-regeneracion: true  # avisa a los jugadores dentro del laberinto
+  anunciar-legendarios: true # anuncia en todo el server cuando alguien saca un legendario
+
+  # peso = probabilidad relativa. MAS ALTO = MAS COMUN. Acepta decimales.
+  # Mira los porcentajes reales con:  /laberinto loot chances
+  # encantamientos: nombre minecraft en minusculas (sharpness, efficiency...)
+  items:
+    # ---------- COMUN ----------
+    - {material: ENDER_PEARL,        min: 2,  max: 4,  peso: 30,  rareza: COMUN}
+    - {material: DIAMOND,            min: 1,  max: 3,  peso: 28,  rareza: COMUN}
+    - {material: GOLDEN_APPLE,       min: 1,  max: 3,  peso: 26,  rareza: COMUN}
+    - {material: EXPERIENCE_BOTTLE,  min: 8,  max: 16, peso: 20,  rareza: COMUN}
+
+    # ---------- RARO ----------
+    - {material: TOTEM_OF_UNDYING,   min: 1,  max: 1,  peso: 10,  rareza: RARO}
+    - {material: NETHERITE_SCRAP,    min: 1,  max: 3,  peso: 10,  rareza: RARO}
+    - {material: ANCIENT_DEBRIS,     min: 1,  max: 2,  peso: 7,   rareza: RARO}
+    - {material: DIAMOND_BLOCK,      min: 1,  max: 2,  peso: 5,   rareza: RARO}
+    - {material: ENCHANTED_BOOK,     min: 1,  max: 1,  peso: 4,   rareza: RARO, nombre: "Libro de Reparacion", encantamientos: {mending: 1, unbreaking: 3}}
+
+    # ---------- EPICO ----------
+    - {material: ENCHANTED_GOLDEN_APPLE, min: 1, max: 1, peso: 4,   rareza: EPICO}
+    - {material: NETHERITE_INGOT,        min: 1, max: 1, peso: 2.5, rareza: EPICO}
+    - {material: NETHERITE_UPGRADE_SMITHING_TEMPLATE, min: 1, max: 1, peso: 2, rareza: EPICO}
+
+    # ---------- LEGENDARIO (muy baja probabilidad) ----------
+    - material: NETHERITE_SWORD
+      peso: 0.6
+      rareza: LEGENDARIO
+      nombre: "Espada del Laberinto"
+      encantamientos: {sharpness: 7, unbreaking: 5, looting: 5, fire_aspect: 3, sweeping_edge: 5, mending: 1}
+    - material: NETHERITE_PICKAXE
+      peso: 0.6
+      rareza: LEGENDARIO
+      nombre: "Pico del Laberinto"
+      encantamientos: {efficiency: 7, unbreaking: 5, fortune: 5, mending: 1}
+    - material: NETHERITE_AXE
+      peso: 0.4
+      rareza: LEGENDARIO
+      nombre: "Hacha del Laberinto"
+      encantamientos: {sharpness: 7, efficiency: 7, unbreaking: 5, mending: 1}
+    - material: NETHERITE_SHOVEL
+      peso: 0.3
+      rareza: LEGENDARIO
+      nombre: "Pala del Laberinto"
+      encantamientos: {efficiency: 7, unbreaking: 5, silk_touch: 1, mending: 1}
+    - material: BOW
+      peso: 0.4
+      rareza: LEGENDARIO
+      nombre: "Arco del Laberinto"
+      encantamientos: {power: 7, punch: 3, flame: 1, unbreaking: 5, mending: 1}
+    - material: NETHERITE_CHESTPLATE
+      peso: 0.3
+      rareza: LEGENDARIO
+      nombre: "Peto del Laberinto"
+      encantamientos: {protection: 6, unbreaking: 5, mending: 1}

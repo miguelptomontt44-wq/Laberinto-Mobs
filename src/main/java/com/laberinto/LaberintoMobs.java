@@ -42,7 +42,7 @@ import java.util.UUID;
 
 public final class LaberintoMobs extends JavaPlugin implements Listener, TabExecutor {
 
-    private record Zone(String world, int x1, int y1, int z1, int x2, int y2, int z2) {
+    record Zone(String world, int x1, int y1, int z1, int x2, int y2, int z2) {
         boolean contains(Location l) {
             if (l.getWorld() == null || !l.getWorld().getName().equals(world)) return false;
             return contains(l.getX(), l.getY(), l.getZ());
@@ -53,6 +53,7 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
         }
     }
 
+    private final LootManager loot = new LootManager(this);
     private final Map<UUID, Mob> mobs = new HashMap<>();
     private final Random rnd = new Random();
     private final List<EntityType> types = new ArrayList<>();
@@ -70,8 +71,12 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        // agrega al config.yml existente las secciones nuevas (ej. loot) sin tocar lo que ya tenias
+        getConfig().options().copyDefaults(true);
+        saveConfig();
         loadSettings();
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(loot, this);
         var cmd = getCommand("laberinto");
         if (cmd != null) {
             cmd.setExecutor(this);
@@ -85,12 +90,15 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
 
     @Override
     public void onDisable() {
+        getServer().getScheduler().cancelTasks(this);
+        loot.removeAll();
         removeAll();
     }
 
     private void startTask() {
         getServer().getScheduler().cancelTasks(this);
         getServer().getScheduler().runTaskTimer(this, this::tick, 40L, Math.max(5, intervalTicks));
+        loot.startTasks();
     }
 
     private void loadSettings() {
@@ -134,6 +142,8 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
                 }
             }
         }
+
+        loot.load(c, zone);
     }
 
     // ---------------------------------------------------------------- bucle principal
@@ -352,7 +362,7 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            msg(sender, "Uso: /laberinto <pos1|pos2|info|limpiar|reload>", NamedTextColor.YELLOW);
+            msg(sender, "Uso: /laberinto <pos1|pos2|info|limpiar|loot|reload>", NamedTextColor.YELLOW);
             return true;
         }
         switch (args[0].toLowerCase()) {
@@ -381,6 +391,7 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
                     c.set("zona.max.z", Math.max(pos1.getBlockZ(), pos2.getBlockZ()));
                     saveConfig();
                     loadSettings();
+                    loot.regenerate();
                     msg(sender, "Zona guardada y ACTIVA. Los mobs apareceran solos cuando alguien entre.",
                             NamedTextColor.GREEN);
                 }
@@ -392,25 +403,29 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
                     msg(sender, "Zona: " + zone.world() + " (" + zone.x1() + "," + zone.y1() + "," + zone.z1()
                             + ") -> (" + zone.x2() + "," + zone.y2() + "," + zone.z2() + ")", NamedTextColor.AQUA);
                     msg(sender, "Mobs activos: " + mobs.size(), NamedTextColor.AQUA);
+                    msg(sender, "Botines activos: " + loot.count(), NamedTextColor.AQUA);
                 }
             }
             case "limpiar" -> {
                 removeAll();
                 msg(sender, "Mobs del laberinto eliminados.", NamedTextColor.GREEN);
             }
+            case "loot" -> loot.command(sender, args);
             case "reload" -> {
                 loadSettings();
                 startTask();
                 msg(sender, "Configuracion recargada.", NamedTextColor.GREEN);
             }
-            default -> msg(sender, "Uso: /laberinto <pos1|pos2|info|limpiar|reload>", NamedTextColor.YELLOW);
+            default -> msg(sender, "Uso: /laberinto <pos1|pos2|info|limpiar|loot|reload>", NamedTextColor.YELLOW);
         }
         return true;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1) return List.of("pos1", "pos2", "info", "limpiar", "reload");
+        if (args.length == 1) return List.of("pos1", "pos2", "info", "limpiar", "loot", "reload");
+        if (args.length == 2 && args[0].equalsIgnoreCase("loot"))
+            return List.of("regenerar", "limpiar", "chances", "ubicaciones");
         return List.of();
     }
 }

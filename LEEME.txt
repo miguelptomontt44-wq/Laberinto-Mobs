@@ -1,7 +1,22 @@
-LaberintoMobs - plugin para Paper 26.3 (Java 25)
+LaberintoMobs 1.1.0 - plugin para Paper 26.3 (Java 25)
 
-1) Sube esta carpeta a GitHub (ver pasos en el chat) y descarga el .jar compilado.
-2) Pon el .jar en la carpeta "plugins" del servidor y reinicia.
-3) Parate en una esquina del laberinto (en el suelo): /laberinto pos1
-4) Ve a la esquina opuesta:                           /laberinto pos2
-5) Listo. Desde ahi funciona solo. Config: plugins/LaberintoMobs/config.yml
+MOBS (igual que antes)
+1) Sube esta carpeta a GitHub y descarga el .jar compilado.
+2) Ponlo en "plugins" y reinicia.
+3) En una esquina del laberinto (en el suelo): /laberinto pos1
+4) En la esquina opuesta:                       /laberinto pos2
+
+BOTIN (nuevo)
+- Aparecen cofres (o cabezas) con brillo de color en el laberinto.
+  Click izquierdo o derecho = recibes el premio.
+- Cada 10 min desaparecen todos y salen en otros lugares.
+- Gris = comun, celeste = raro, morado = epico, dorado = legendario.
+- Todo se edita en plugins/LaberintoMobs/config.yml (seccion "loot").
+
+COMANDOS
+/laberinto loot chances       -> % real de cada premio
+/laberinto loot regenerar     -> cambia todo el botin ya
+/laberinto loot ubicaciones   -> coordenadas del botin activo
+/laberinto loot limpiar       -> borra el botin
+/laberinto info               -> zona, mobs y botines activos
+/laberinto reload             -> recarga la config
