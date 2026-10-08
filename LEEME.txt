@@ -26,3 +26,9 @@ NOVEDADES 1.4.0
 - 186 items de botin, 32 habilidades unicas, mobs nuevos por dificultad.
 - Clic derecho: Espada del Vacio (salto) y Brujula del Tesoro (indica el botin mas cercano).
 - En DIFICIL los cofres legendarios salen ~3.5 veces mas que en MEDIO.
+
+1.4.1 - PORTALES
+Al cambiar la dificultad (comando o automatico) el plugin ejecuta solo "/lportal rotar":
+los portales de salida se regeneran con particulas. Ademas, si un portal de salida sin
+registrar intenta mandar a alguien al End desde dentro del laberinto, se cancela y se
+reinician los portales. Se apaga con dificultad.resetear-portales: false.

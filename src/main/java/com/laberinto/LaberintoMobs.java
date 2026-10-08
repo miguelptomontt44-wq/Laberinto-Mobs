@@ -5,6 +5,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -25,11 +26,15 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityPortalEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -69,6 +74,8 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
     private int intervalTicks, deleteAfterSeconds;
     private double minDist, maxDist;
     private boolean protectFire = true;
+    private boolean resetPortals = true;
+    private long lastPortalReset;
 
     @Override
     public void onEnable() {
@@ -129,6 +136,7 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
         maxDist = Math.max(minDist + 1, c.getDouble("spawn.distancia-max", 28));
         deleteAfterSeconds = c.getInt("spawn.borrar-tras-segundos", 10);
         protectFire = c.getBoolean("proteccion.fuego", true);
+        resetPortals = c.getBoolean("dificultad.resetear-portales", true);
 
         diff.load(c, zone);
         loot.load(c, zone);
@@ -370,6 +378,40 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
         if (diff.clearMobsOnChange()) removeAll();
         loot.setLevel(lv);
         loot.regenerate();
+        // los portales de salida tambien se reinician con el nivel nuevo
+        if (resetPortals) Bukkit.getScheduler().runTaskLater(this, () -> resetPortalsNow("cambio de dificultad"), 20L);
+    }
+
+    /** Reinicia los portales de salida (equivale a /lportal rotar). Funciona solo si LaberintoPortales esta instalado. */
+    private void resetPortalsNow(String reason) {
+        Plugin pp = Bukkit.getPluginManager().getPlugin("LaberintoPortales");
+        if (pp == null || !pp.isEnabled()) return;
+        long now = System.currentTimeMillis();
+        if (now - lastPortalReset < 10_000L) return; // evita repetirlo en rafaga
+        lastPortalReset = now;
+        getLogger().info("Reiniciando portales (" + reason + ")");
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lportal rotar");
+    }
+
+    /**
+     * Red de seguridad: si un portal de salida "huerfano" (sin registrar) intenta mandar a alguien al End
+     * desde dentro del laberinto, se cancela y se reinician los portales.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPortalPlayer(PlayerPortalEvent e) {
+        if (e.isCancelled() || zone == null) return;
+        if (e.getCause() != PlayerTeleportEvent.TeleportCause.END_PORTAL) return;
+        if (e.getFrom() == null || !zone.contains(e.getFrom())) return;
+        e.setCancelled(true);
+        msg(e.getPlayer(), "Ese portal estaba desactualizado; se reinicio. Intenta de nuevo en unos segundos.",
+                NamedTextColor.YELLOW);
+        resetPortalsNow("portal huerfano");
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPortalEntity(EntityPortalEvent e) {
+        if (e.isCancelled() || zone == null || e.getFrom() == null || !zone.contains(e.getFrom())) return;
+        if (e.getFrom().getBlock().getType() == Material.END_PORTAL) e.setCancelled(true);
     }
 
     // ---------------------------------------------------------------- comandos
