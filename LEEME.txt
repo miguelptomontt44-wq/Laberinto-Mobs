@@ -1,22 +1,23 @@
-LaberintoMobs 1.1.0 - plugin para Paper 26.3 (Java 25)
+LaberintoMobs 1.3.0 - plugin para Paper 26.x (Java 25)
 
-MOBS (igual que antes)
-1) Sube esta carpeta a GitHub y descarga el .jar compilado.
-2) Ponlo en "plugins" y reinicia.
-3) En una esquina del laberinto (en el suelo): /laberinto pos1
-4) En la esquina opuesta:                       /laberinto pos2
+INSTALACION
+1) Sube el contenido de esta carpeta a tu GitHub y descarga el .jar compilado (Actions).
+2) Reemplaza el .jar viejo en "plugins" y COPIA el config.yml incluido
+   a plugins/LaberintoMobs/config.yml (ya trae tu zona). Reinicia.
+   (LaberintoPortales no necesita cambios: lee la zona de este mismo config.)
 
-BOTIN (nuevo)
-- Aparecen cofres (o cabezas) con brillo de color en el laberinto.
-  Click izquierdo o derecho = recibes el premio.
-- Cada 10 min desaparecen todos y salen en otros lugares.
-- Gris = comun, celeste = raro, morado = epico, dorado = legendario.
-- Todo se edita en plugins/LaberintoMobs/config.yml (seccion "loot").
+DIFICULTAD (cada 30 min, se avisa a todo el server)
+  /nivel                              -> ver nivel actual y tiempo (todos)
+  /laberinto dificultad facil|medio|dificil   -> forzar un nivel
+  /laberinto dificultad rotar         -> pasar al siguiente ya
+  /laberinto dificultad pausar|reanudar
+Cambia: mobs (tipos, cantidad, vida, fuerza), botin (cantidad y rareza) y
+recompensas por matar mobs (XP y drops extra).
 
-COMANDOS
-/laberinto loot chances       -> % real de cada premio
-/laberinto loot regenerar     -> cambia todo el botin ya
-/laberinto loot ubicaciones   -> coordenadas del botin activo
-/laberinto loot limpiar       -> borra el botin
-/laberinto info               -> zona, mobs y botines activos
-/laberinto reload             -> recarga la config
+BOTIN
+  /laberinto loot chances [facil|medio|dificil]   -> % reales
+  /laberinto loot regenerar | ubicaciones | limpiar
+
+HABILIDADES UNICAS
+Los items legendarios (y algunos epicos/raros) traen poderes. Se leen en el lore.
+Se asignan con  habilidad: <id>  en loot.items del config.

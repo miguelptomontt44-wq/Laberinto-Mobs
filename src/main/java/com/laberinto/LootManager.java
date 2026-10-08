@@ -29,15 +29,20 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * Botin aleatorio dentro del laberinto.
@@ -70,7 +75,8 @@ final class LootManager implements Listener {
     }
 
     private record Entry(Material material, int min, int max, double weight, Rarity rarity,
-                         String name, Map<Enchantment, Integer> enchants) {
+                         String name, Map<Enchantment, Integer> enchants,
+                         String ability, String potion, Map<Difficulty, Double> levelMult) {
     }
 
     private static final class Spot {
@@ -96,7 +102,8 @@ final class LootManager implements Listener {
     private final JavaPlugin plugin;
     private final Random rnd = new Random();
     private final List<Entry> entries = new ArrayList<>();
-    private double totalWeight;
+    private LevelConfig level;
+    private Function<Difficulty, LevelConfig> levelLookup = d -> null;
 
     private final List<Spot> spots = new ArrayList<>();
     private final Map<UUID, Spot> byEntity = new HashMap<>();
@@ -105,10 +112,8 @@ final class LootManager implements Listener {
     private int generation;
 
     private boolean enabled;
-    private int amount;
     private double regenMinutes;
     private boolean headMode;
-    private int rollsMin, rollsMax;
     private double minSeparation;
     private int minWalls;
     private boolean announceRegen, announceLegendary;
@@ -123,11 +128,8 @@ final class LootManager implements Listener {
     void load(FileConfiguration c, LaberintoMobs.Zone z) {
         this.zone = z;
         enabled = c.getBoolean("loot.activo", true);
-        amount = Math.max(1, c.getInt("loot.cantidad", 10));
         regenMinutes = Math.max(0.1, c.getDouble("loot.regenerar-minutos", 10));
         headMode = "CABEZA".equalsIgnoreCase(c.getString("loot.apariencia", "COFRE"));
-        rollsMin = Math.max(1, c.getInt("loot.tiradas-min", 1));
-        rollsMax = Math.max(rollsMin, c.getInt("loot.tiradas-max", 2));
         minSeparation = Math.max(0, c.getDouble("loot.separacion-minima", 6));
         minWalls = Math.max(0, c.getInt("loot.paredes-minimas", 1));
         announceRegen = c.getBoolean("loot.avisar-regeneracion", true);
@@ -135,7 +137,6 @@ final class LootManager implements Listener {
         showDistance = Math.max(16, c.getDouble("loot.distancia-visible", 48));
 
         entries.clear();
-        totalWeight = 0;
         for (Map<?, ?> m : c.getMapList("loot.items")) {
             try {
                 Material mat = Material.valueOf(str(m.get("material")).toUpperCase());
@@ -157,8 +158,21 @@ final class LootManager implements Listener {
                         ench.put(e, (int) num(en.getValue(), 1));
                     }
                 }
-                entries.add(new Entry(mat, Math.max(1, min), Math.max(Math.max(1, min), max), w, r, name, ench));
-                totalWeight += w;
+                String ability = m.get("habilidad") == null ? null : str(m.get("habilidad")).toLowerCase();
+                if (ability != null && !Habilidades.INFO.containsKey(ability)) {
+                    plugin.getLogger().warning("Habilidad desconocida en loot: " + ability);
+                    ability = null;
+                }
+                String potion = m.get("pocion") == null ? null : str(m.get("pocion")).toLowerCase();
+                Map<Difficulty, Double> lm = new EnumMap<>(Difficulty.class);
+                if (m.get("niveles") instanceof Map<?, ?> nm) {
+                    for (Map.Entry<?, ?> en : nm.entrySet()) {
+                        Difficulty d = Difficulty.parse(str(en.getKey()));
+                        if (d != null) lm.put(d, num(en.getValue(), 1));
+                    }
+                }
+                entries.add(new Entry(mat, Math.max(1, min), Math.max(Math.max(1, min), max), w, r, name, ench,
+                        ability, potion, lm));
             } catch (IllegalArgumentException ex) {
                 plugin.getLogger().warning("Entrada de loot invalida (" + m + "): " + ex.getMessage());
             }
@@ -179,6 +193,14 @@ final class LootManager implements Listener {
         }
     }
 
+    void setLevel(LevelConfig lv) {
+        this.level = lv;
+    }
+
+    void setLevelLookup(Function<Difficulty, LevelConfig> f) {
+        this.levelLookup = f;
+    }
+
     // ---------------------------------------------------------------- tareas
 
     void startTasks() {
@@ -195,7 +217,7 @@ final class LootManager implements Listener {
     void regenerate() {
         removeAll();
         generation++;
-        if (!enabled || zone == null || entries.isEmpty()) return;
+        if (!enabled || zone == null || entries.isEmpty() || level == null) return;
         World w = Bukkit.getWorld(zone.world());
         if (w == null) return;
         plan(w, generation, new int[]{0, 0});
@@ -203,8 +225,10 @@ final class LootManager implements Listener {
 
     private void plan(World w, int gen, int[] st) {
         if (gen != generation) return;
+        int amount = level.lootAmount;
         if (st[0] >= amount || st[1] >= amount * 40) {
-            plugin.getLogger().info("Botin del laberinto generado: " + st[0] + "/" + amount);
+            plugin.getLogger().info("Botin del laberinto generado: " + st[0] + "/" + amount
+                    + " (nivel " + level.name + ")");
             if (announceRegen && st[0] > 0) announceRegeneration(w);
             return;
         }
@@ -246,12 +270,14 @@ final class LootManager implements Listener {
 
         List<ItemStack> items = new ArrayList<>();
         Rarity best = Rarity.COMUN;
-        int rolls = rollsMin + rnd.nextInt(rollsMax - rollsMin + 1);
+        int rolls = level.rollsMin + rnd.nextInt(level.rollsMax - level.rollsMin + 1);
         for (int i = 0; i < rolls; i++) {
-            Entry e = pick();
+            Entry e = pick(level, null);
+            if (e == null) continue;
             items.add(build(e));
             if (e.rarity().ordinal() > best.ordinal()) best = e.rarity();
         }
+        if (items.isEmpty()) return false;
         spots.add(new Spot(loc, items, best, rnd.nextFloat() * 360f));
         return true;
     }
@@ -276,13 +302,35 @@ final class LootManager implements Listener {
 
     // ---------------------------------------------------------------- items
 
-    private Entry pick() {
-        double r = rnd.nextDouble() * totalWeight;
+    /** Peso real = peso base x multiplicador de rareza del nivel x multiplicador propio del item en ese nivel. */
+    private double weightOf(Entry e, LevelConfig lv, Rarity cap) {
+        if (cap != null && e.rarity().ordinal() > cap.ordinal()) return 0;
+        double w = e.weight() * lv.rarityMult(e.rarity());
+        if (lv.diff != null) w *= e.levelMult().getOrDefault(lv.diff, 1.0);
+        return Math.max(0, w);
+    }
+
+    private Entry pick(LevelConfig lv, Rarity cap) {
+        double total = 0;
+        for (Entry e : entries) total += weightOf(e, lv, cap);
+        if (total <= 0) return null;
+        double r = rnd.nextDouble() * total;
+        Entry last = null;
         for (Entry e : entries) {
-            r -= e.weight();
+            double w = weightOf(e, lv, cap);
+            if (w <= 0) continue;
+            last = e;
+            r -= w;
             if (r < 0) return e;
         }
-        return entries.get(entries.size() - 1);
+        return last;
+    }
+
+    /** Un premio extra cuando muere un mob del laberinto (segun el nivel actual). */
+    List<ItemStack> rollForMob(Rarity cap) {
+        if (level == null || entries.isEmpty()) return List.of();
+        Entry e = pick(level, cap);
+        return e == null ? List.of() : List.of(build(e));
     }
 
     private ItemStack build(Entry e) {
@@ -291,7 +339,7 @@ final class LootManager implements Listener {
         ItemMeta meta = is.getItemMeta();
         if (meta == null) return is;
 
-        boolean special = !e.enchants().isEmpty() || e.name() != null;
+        boolean special = !e.enchants().isEmpty() || e.name() != null || e.ability() != null;
         if (e.name() != null) {
             meta.displayName(Component.text(e.name(), e.rarity().color)
                     .decoration(TextDecoration.ITALIC, false).decorate(TextDecoration.BOLD));
@@ -301,12 +349,23 @@ final class LootManager implements Listener {
         } else {
             e.enchants().forEach((en, lvl) -> meta.addEnchant(en, lvl, true));
         }
+        if (meta instanceof PotionMeta pm && e.potion() != null) {
+            PotionType pt = Registry.POTION.get(NamespacedKey.minecraft(e.potion()));
+            if (pt != null) pm.setBasePotionType(pt);
+            else plugin.getLogger().warning("Pocion desconocida en loot: " + e.potion());
+        }
         if (special) {
-            meta.lore(List.of(
-                    Component.text("Reliquia del Laberinto", e.rarity().color)
-                            .decoration(TextDecoration.ITALIC, false),
-                    Component.text("Rareza: " + e.rarity().label, NamedTextColor.DARK_GRAY)
-                            .decoration(TextDecoration.ITALIC, false)));
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.text("Reliquia del Laberinto", e.rarity().color)
+                    .decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.text("Rareza: " + e.rarity().label, NamedTextColor.DARK_GRAY)
+                    .decoration(TextDecoration.ITALIC, false));
+            if (e.ability() != null) {
+                lore.add(Component.empty());
+                lore.addAll(Habilidades.lore(e.ability(), e.rarity().color));
+                meta.getPersistentDataContainer().set(Habilidades.key, PersistentDataType.STRING, e.ability());
+            }
+            meta.lore(lore);
         }
         is.setItemMeta(meta);
         return is;
@@ -450,7 +509,7 @@ final class LootManager implements Listener {
                 sender.sendMessage(Component.text("Botin eliminado (volvera en el proximo ciclo).",
                         NamedTextColor.GREEN));
             }
-            case "chances" -> chances(sender);
+            case "chances" -> chances(sender, args.length > 2 ? args[2] : null);
             case "ubicaciones" -> {
                 if (spots.isEmpty()) {
                     sender.sendMessage(Component.text("No hay botin activo.", NamedTextColor.RED));
@@ -462,23 +521,48 @@ final class LootManager implements Listener {
                 }
             }
             default -> sender.sendMessage(Component.text(
-                    "Uso: /laberinto loot <regenerar|limpiar|chances|ubicaciones>", NamedTextColor.YELLOW));
+                    "Uso: /laberinto loot <regenerar|limpiar|chances [nivel]|ubicaciones>", NamedTextColor.YELLOW));
         }
     }
 
-    private void chances(CommandSender sender) {
+    private void chances(CommandSender sender, String arg) {
         if (entries.isEmpty()) {
             sender.sendMessage(Component.text("No hay items de loot en config.yml", NamedTextColor.RED));
             return;
         }
-        sender.sendMessage(Component.text("--- Probabilidad por tirada (tiradas por cofre: "
-                + rollsMin + "-" + rollsMax + ") ---", NamedTextColor.AQUA));
+        Difficulty d = Difficulty.parse(arg);
+        LevelConfig lv = d != null ? levelLookup.apply(d) : level;
+        if (lv == null) return;
+
+        double total = 0;
+        double[] byRarity = new double[Rarity.values().length];
+        for (Entry e : entries) {
+            double w = weightOf(e, lv, null);
+            total += w;
+            byRarity[e.rarity().ordinal()] += w;
+        }
+        if (total <= 0) {
+            sender.sendMessage(Component.text("Ese nivel no tiene loot posible.", NamedTextColor.RED));
+            return;
+        }
+        sender.sendMessage(Component.text("--- Probabilidad por tirada | nivel " + lv.name + " | cofres: "
+                + lv.lootAmount + " | tiradas: " + lv.rollsMin + "-" + lv.rollsMax + " ---", NamedTextColor.AQUA));
+        StringBuilder sb = new StringBuilder();
+        for (Rarity r : Rarity.values()) {
+            sb.append(r.label).append(' ').append(String.format("%.1f%%", byRarity[r.ordinal()] / total * 100))
+                    .append("   ");
+        }
+        sender.sendMessage(Component.text(sb.toString().trim(), NamedTextColor.GOLD));
+
+        final double tot = total;
         List<Entry> sorted = new ArrayList<>(entries);
-        sorted.sort((a, b) -> Double.compare(b.weight(), a.weight()));
+        sorted.sort((a, b) -> Double.compare(weightOf(b, lv, null), weightOf(a, lv, null)));
         for (Entry e : sorted) {
+            double w = weightOf(e, lv, null);
+            if (w <= 0) continue;
             String n = e.name() != null ? e.name() : e.material().name();
-            sender.sendMessage(Component.text(String.format("%6.2f%%  %s (%s)",
-                    e.weight() / totalWeight * 100.0, n, e.rarity().label), e.rarity().color));
+            sender.sendMessage(Component.text(String.format("%6.2f%%  %s (%s)", w / tot * 100.0, n,
+                    e.rarity().label), e.rarity().color));
         }
     }
 }

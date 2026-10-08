@@ -1,27 +1,35 @@
-# ===== LaberintoMobs =====
-# La zona se configura con los comandos /laberinto pos1 y /laberinto pos2
-# (o editando estos numeros a mano). Despues /laberinto reload.
+# ===== LaberintoMobs 1.3.0 =====
+# La zona se configura con /laberinto pos1 y /laberinto pos2 (o editando estos numeros).
+# Despues: /laberinto reload
 zona:
   activa: false
   mundo: world
-  min: {x: 0, y: 0, z: 0}
-  max: {x: 0, y: 0, z: 0}
+  min:
+    x: 0
+    y: 0
+    z: 0
+  max:
+    x: 0
+    y: 0
+    z: 0
+
+# Protege el laberinto del fuego (bolas de fuego de Blaze, rayos, flechas incendiarias)
+proteccion:
+  fuego: true
 
 spawn:
-  intervalo-ticks: 30        # cada cuanto intenta spawnear (20 ticks = 1 segundo)
-  por-ciclo: 4               # mobs nuevos maximos por intento
-  max-total: 60              # mobs a la vez en todo el laberinto
-  max-por-jugador: 30        # mobs a la vez cerca de cada jugador
-  distancia-min: 8           # minimo de bloques al jugador
-  distancia-max: 28          # maximo de bloques al jugador
-  borrar-tras-segundos: 10   # segundos sin jugadores antes de borrar los mobs
+  intervalo-ticks: 30      # cada cuanto intenta spawnear (20 ticks = 1 segundo)
+  por-ciclo: 4             # (valor base; cada dificultad define el suyo)
+  max-total: 60            # (valor base)
+  max-por-jugador: 30      # (valor base)
+  distancia-min: 8         # minimo de bloques al jugador
+  distancia-max: 28        # maximo de bloques al jugador
+  borrar-tras-segundos: 10 # segundos sin jugadores antes de borrar los mobs
 
-# Niveles: 0 = sin efecto, 1 = Fuerza I / Velocidad I, 2 = nivel II...
+# Valores base: se usan si dificultad.activa = false
 efectos:
   fuerza: 1
   velocidad: 1
-
-# Probabilidad relativa de cada mob (mas alto = mas comun). 0 = no aparece.
 mobs:
   pesos:
     PIGLIN_BRUTE: 25
@@ -29,77 +37,226 @@ mobs:
     WITHER_SKELETON: 25
     ENDERMAN: 20
     RAVAGER: 8
+    VINDICATOR: 22
+    BOGGED: 12
+    STRAY: 10
+    WITCH: 10
+    ZOGLIN: 12
+    BLAZE: 10
+    BREEZE: 8
+    ILLUSIONER: 5
+
+# ===================================================================
+#  DIFICULTAD  (cambia mobs, botin y recompensas)
+# ===================================================================
+# Cada X minutos el laberinto cambia de nivel y se AVISA A TODO EL SERVER
+# (chat + titulo + sonido). Los jugadores dentro ven una barra con el nivel.
+# Comandos (admin):  /laberinto dificultad <facil|medio|dificil|rotar|pausar|reanudar>
+# Cualquiera puede ver el nivel actual con:  /nivel
+dificultad:
+  activa: true
+  cambiar-cada-minutos: 30
+  modo: ALEATORIO              # ALEATORIO (siempre distinta a la actual) o CICLO (facil>medio>dificil)
+  pesos-aleatorio: {FACIL: 35, MEDIO: 40, DIFICIL: 25}
+  inicial: MEDIO
+  aviso-previo-segundos: 60    # avisa a los del laberinto antes del cambio (0 = no)
+  limpiar-mobs-al-cambiar: true
+  barra: true                  # barra de jefe con el nivel y el tiempo
+
+  niveles:
+    FACIL:
+      nombre: Facil
+      descripcion: "Mobs mas debiles y botin comun. Ideal para entrar con calma."
+      spawn: {max-total: 30, max-por-jugador: 15, por-ciclo: 2}
+      efectos: {fuerza: 0, velocidad: 0}
+      vida-multiplicador: 1.0
+      mobs: {VINDICATOR: 24, BOGGED: 18, STRAY: 16, WITCH: 10, PIGLIN_BRUTE: 12, ENDERMAN: 8, WITHER_SKELETON: 6}
+      loot:
+        cantidad: 7
+        tiradas-min: 1
+        tiradas-max: 1
+        rareza: {COMUN: 1.6, RARO: 0.7, EPICO: 0.25, LEGENDARIO: 0.1}
+      recompensa-mobs: {xp-multiplicador: 1.0, drop-chance: 0.02, drop-rareza-maxima: RARO}
+    MEDIO:
+      nombre: Medio
+      descripcion: "El laberinto de siempre: mobs fuertes y botin equilibrado."
+      spawn: {max-total: 60, max-por-jugador: 30, por-ciclo: 4}
+      efectos: {fuerza: 1, velocidad: 1}
+      vida-multiplicador: 1.0
+      mobs: {PIGLIN_BRUTE: 25, EVOKER: 20, WITHER_SKELETON: 25, ENDERMAN: 20, RAVAGER: 8, VINDICATOR: 22, BOGGED: 12, STRAY: 10, WITCH: 10, ZOGLIN: 12, BLAZE: 10, BREEZE: 8, ILLUSIONER: 5}
+      loot:
+        cantidad: 10
+        tiradas-min: 1
+        tiradas-max: 2
+        rareza: {COMUN: 1.0, RARO: 1.0, EPICO: 1.0, LEGENDARIO: 1.0}
+      recompensa-mobs: {xp-multiplicador: 1.5, drop-chance: 0.05, drop-rareza-maxima: RARO}
+    DIFICIL:
+      nombre: Dificil
+      descripcion: "PELIGRO: mobs letales, mas cantidad y vida... pero el mejor botin."
+      spawn: {max-total: 80, max-por-jugador: 40, por-ciclo: 5}
+      efectos: {fuerza: 2, velocidad: 1}
+      vida-multiplicador: 1.4
+      mobs: {PIGLIN_BRUTE: 24, EVOKER: 24, WITHER_SKELETON: 28, ENDERMAN: 18, RAVAGER: 16, VINDICATOR: 14, BOGGED: 6, STRAY: 4, WITCH: 10, ZOGLIN: 18, BLAZE: 16, BREEZE: 14, ILLUSIONER: 12}
+      loot:
+        cantidad: 14
+        tiradas-min: 1
+        tiradas-max: 3
+        rareza: {COMUN: 0.5, RARO: 1.2, EPICO: 2.0, LEGENDARIO: 2.5}
+      recompensa-mobs: {xp-multiplicador: 2.5, drop-chance: 0.10, drop-rareza-maxima: EPICO}
+
+# ===================================================================
+#  HABILIDADES UNICAS (armas y armaduras del laberinto)
+# ===================================================================
+# Los items con "habilidad:" en el loot tienen poderes especiales.
+habilidades:
+  activo: true
+  pvp: true             # si los efectos tambien funcionan contra jugadores
+  set-completo: true    # bonus al llevar casco+peto+pantalones+botas del laberinto
 
 # ===================================================================
 #  BOTIN (LOOT) DEL LABERINTO
 # ===================================================================
 # Cada cierto tiempo TODO el botin desaparece y aparece en otros lugares.
-# Se hace click (izq. o der.) sobre el cofre/cabeza para recibir el premio.
-# El color del brillo indica la rareza: gris=comun, celeste=raro,
-# morado=epico, dorado=legendario.
+# Click (izq. o der.) sobre el cofre/cabeza para recibir el premio.
+# Brillo: gris=comun, celeste=raro, morado=epico, dorado=legendario.
 loot:
   activo: true
-  cantidad: 10               # cuantos cofres/cabezas hay a la vez
-  regenerar-minutos: 10      # cada cuanto cambian de lugar y se renuevan
-  apariencia: COFRE          # COFRE o CABEZA
-  tiradas-min: 1             # premios por cofre (minimo)
-  tiradas-max: 2             # premios por cofre (maximo)
-  separacion-minima: 6       # bloques minimos entre un cofre y otro
-  paredes-minimas: 1         # paredes pegadas al cofre (evita que salgan sobre los muros)
-  distancia-visible: 48      # a cuantos bloques de un jugador se "materializan"
-  avisar-regeneracion: true  # avisa a los jugadores dentro del laberinto
-  anunciar-legendarios: true # anuncia en todo el server cuando alguien saca un legendario
+  cantidad: 10              # (valor base; cada dificultad define el suyo)
+  tiradas-min: 1            # (valor base)
+  tiradas-max: 2            # (valor base)
+  regenerar-minutos: 10     # cada cuanto cambian de lugar y se renuevan
+  apariencia: COFRE         # COFRE o CABEZA
+  separacion-minima: 6
+  paredes-minimas: 1        # paredes pegadas al cofre (evita que salgan sobre los muros)
+  distancia-visible: 48
+  avisar-regeneracion: true
+  anunciar-legendarios: true
 
-  # peso = probabilidad relativa. MAS ALTO = MAS COMUN. Acepta decimales.
-  # Mira los porcentajes reales con:  /laberinto loot chances
-  # encantamientos: nombre minecraft en minusculas (sharpness, efficiency...)
+  # peso = probabilidad relativa (mas alto = mas comun). Acepta decimales.
+  # La probabilidad final depende del nivel: peso x multiplicador de rareza del nivel.
+  # Ver porcentajes reales:  /laberinto loot chances [facil|medio|dificil]
+  # Campos extra opcionales por item:
+  #   habilidad: id de habilidad unica      pocion: tipo de pocion (strong_healing...)
+  #   niveles: {FACIL: 0, DIFICIL: 2}      multiplicador propio por nivel (0 = no sale)
   items:
-    # ---------- COMUN ----------
-    - {material: ENDER_PEARL,        min: 2,  max: 4,  peso: 30,  rareza: COMUN}
-    - {material: DIAMOND,            min: 1,  max: 3,  peso: 28,  rareza: COMUN}
-    - {material: GOLDEN_APPLE,       min: 1,  max: 3,  peso: 26,  rareza: COMUN}
-    - {material: EXPERIENCE_BOTTLE,  min: 8,  max: 16, peso: 20,  rareza: COMUN}
-
-    # ---------- RARO ----------
-    - {material: TOTEM_OF_UNDYING,   min: 1,  max: 1,  peso: 10,  rareza: RARO}
-    - {material: NETHERITE_SCRAP,    min: 1,  max: 3,  peso: 10,  rareza: RARO}
-    - {material: ANCIENT_DEBRIS,     min: 1,  max: 2,  peso: 7,   rareza: RARO}
-    - {material: DIAMOND_BLOCK,      min: 1,  max: 2,  peso: 5,   rareza: RARO}
-    - {material: ENCHANTED_BOOK,     min: 1,  max: 1,  peso: 4,   rareza: RARO, nombre: "Libro de Reparacion", encantamientos: {mending: 1, unbreaking: 3}}
-
-    # ---------- EPICO ----------
-    - {material: ENCHANTED_GOLDEN_APPLE, min: 1, max: 1, peso: 4,   rareza: EPICO}
-    - {material: NETHERITE_INGOT,        min: 1, max: 1, peso: 2.5, rareza: EPICO}
+    - {material: ENDER_PEARL, min: 2, max: 4, peso: 30, rareza: COMUN}
+    - {material: DIAMOND, min: 1, max: 3, peso: 28, rareza: COMUN}
+    - {material: GOLDEN_APPLE, min: 1, max: 3, peso: 26, rareza: COMUN}
+    - {material: EXPERIENCE_BOTTLE, min: 8, max: 16, peso: 20, rareza: COMUN}
+    - {material: GOLD_INGOT, min: 4, max: 10, peso: 24, rareza: COMUN}
+    - {material: EMERALD, min: 3, max: 8, peso: 22, rareza: COMUN}
+    - {material: BLAZE_ROD, min: 2, max: 4, peso: 14, rareza: COMUN}
+    - {material: GHAST_TEAR, min: 1, max: 3, peso: 12, rareza: COMUN}
+    - {material: GOLDEN_CARROT, min: 6, max: 12, peso: 14, rareza: COMUN}
+    - {material: SPECTRAL_ARROW, min: 16, max: 32, peso: 12, rareza: COMUN}
+    - {material: LAPIS_LAZULI, min: 8, max: 16, peso: 12, rareza: COMUN}
+    - {material: COOKED_BEEF, min: 16, max: 32, peso: 16, rareza: COMUN}
+    - {material: WIND_CHARGE, min: 8, max: 16, peso: 12, rareza: COMUN}
+    - {material: FIREWORK_ROCKET, min: 16, max: 32, peso: 10, rareza: COMUN}
+    - {material: OBSIDIAN, min: 6, max: 12, peso: 10, rareza: COMUN}
+    - {material: POTION, min: 1, max: 1, peso: 10, rareza: COMUN, pocion: strong_healing}
+    - {material: POTION, min: 1, max: 1, peso: 8, rareza: COMUN, pocion: long_fire_resistance}
+    - {material: TOTEM_OF_UNDYING, min: 1, max: 1, peso: 10, rareza: RARO}
+    - {material: NETHERITE_SCRAP, min: 1, max: 3, peso: 10, rareza: RARO}
+    - {material: ANCIENT_DEBRIS, min: 1, max: 2, peso: 7, rareza: RARO}
+    - {material: DIAMOND_BLOCK, min: 1, max: 2, peso: 5, rareza: RARO}
+    - {material: EMERALD_BLOCK, min: 1, max: 2, peso: 6, rareza: RARO}
+    - {material: GOLD_BLOCK, min: 2, max: 4, peso: 7, rareza: RARO}
+    - {material: ENDER_EYE, min: 2, max: 4, peso: 7, rareza: RARO}
+    - {material: SHULKER_SHELL, min: 1, max: 2, peso: 5, rareza: RARO}
+    - {material: ECHO_SHARD, min: 1, max: 2, peso: 5, rareza: RARO}
+    - {material: WITHER_SKELETON_SKULL, min: 1, max: 1, peso: 4, rareza: RARO}
+    - {material: ENDER_CHEST, min: 1, max: 1, peso: 4, rareza: RARO}
+    - {material: NAME_TAG, min: 1, max: 2, peso: 4, rareza: RARO}
+    - {material: SHULKER_BOX, min: 1, max: 1, peso: 3, rareza: RARO}
+    - {material: MUSIC_DISC_PIGSTEP, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: MUSIC_DISC_OTHERSIDE, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: VEX_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: RIB_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: ENDER_PEARL, min: 8, max: 16, peso: 6, rareza: RARO}
+    - {material: GOLDEN_APPLE, min: 4, max: 8, peso: 6, rareza: RARO}
+    - {material: EXPERIENCE_BOTTLE, min: 32, max: 64, peso: 5, rareza: RARO}
+    - {material: DRAGON_BREATH, min: 1, max: 3, peso: 5, rareza: RARO}
+    - {material: HEART_OF_THE_SEA, min: 1, max: 1, peso: 2.5, rareza: RARO}
+    - {material: NAUTILUS_SHELL, min: 1, max: 2, peso: 3, rareza: RARO}
+    - {material: OMINOUS_BOTTLE, min: 1, max: 1, peso: 3, rareza: RARO}
+    - {material: OMINOUS_TRIAL_KEY, min: 1, max: 1, peso: 2.5, rareza: RARO}
+    - {material: POTION, min: 1, max: 1, peso: 6, rareza: RARO, pocion: strong_swiftness}
+    - {material: POTION, min: 1, max: 1, peso: 6, rareza: RARO, pocion: strong_strength}
+    - {material: POTION, min: 1, max: 1, peso: 5, rareza: RARO, pocion: strong_regeneration}
+    - {material: SPLASH_POTION, min: 1, max: 1, peso: 4, rareza: RARO, pocion: strong_healing}
+    - {material: SHIELD, peso: 3, rareza: RARO, nombre: "Escudo del Laberinto", encantamientos: {unbreaking: 4, mending: 1}, habilidad: escudo_reflejo}
+    - {material: DIAMOND_BOOTS, peso: 2.5, rareza: RARO, nombre: "Botas de Diamante Reforzadas", encantamientos: {protection: 5, feather_falling: 5, unbreaking: 4, mending: 1}, habilidad: botas_ligeras}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 4, rareza: RARO, nombre: "Libro de Reparacion", encantamientos: {mending: 1, unbreaking: 3}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 3, rareza: RARO, nombre: "Libro de Filo VI", encantamientos: {sharpness: 6}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 3, rareza: RARO, nombre: "Libro de Eficiencia VI", encantamientos: {efficiency: 6}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 3, rareza: RARO, nombre: "Libro de Proteccion V", encantamientos: {protection: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 3, rareza: RARO, nombre: "Libro de Fortuna IV", encantamientos: {fortune: 4}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 3, rareza: RARO, nombre: "Libro de Botin IV", encantamientos: {looting: 4}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 3, rareza: RARO, nombre: "Libro de Poder VI", encantamientos: {power: 6}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 3, rareza: RARO, nombre: "Libro de Toque de Seda", encantamientos: {silk_touch: 1}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 3, rareza: RARO, nombre: "Libro de Infinidad", encantamientos: {infinity: 1}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Afinidad Acuatica", encantamientos: {aqua_affinity: 1}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Impulso V", encantamientos: {riptide: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 4, rareza: RARO, nombre: "Libro de Irrompibilidad V", encantamientos: {unbreaking: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 3, rareza: RARO, nombre: "Libro de Caida de Pluma VI", encantamientos: {feather_falling: 6}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Proteccion contra Fuego VI", encantamientos: {fire_protection: 6}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Proteccion contra Explosiones VI", encantamientos: {blast_protection: 6}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Proteccion contra Proyectiles VI", encantamientos: {projectile_protection: 6}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Respiracion V", encantamientos: {respiration: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Agilidad Acuatica V", encantamientos: {depth_strider: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Velocidad de Almas V", encantamientos: {soul_speed: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Sigilo Veloz V", encantamientos: {swift_sneak: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: RARO, nombre: "Libro de Espinas V", encantamientos: {thorns: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Empuje IV", encantamientos: {knockback: 4}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Aspecto Igneo IV", encantamientos: {fire_aspect: 4}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Filo Barredor V", encantamientos: {sweeping_edge: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: RARO, nombre: "Libro de Castigo VII", encantamientos: {smite: 7}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: RARO, nombre: "Libro de Perdicion de los Artropodos VII", encantamientos: {bane_of_arthropods: 7}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Carga Rapida V", encantamientos: {quick_charge: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Perforacion VI", encantamientos: {piercing: 6}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2.5, rareza: RARO, nombre: "Libro de Golpe IV", encantamientos: {punch: 4}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: RARO, nombre: "Libro de Lealtad V", encantamientos: {loyalty: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: RARO, nombre: "Libro de Empalamiento VII", encantamientos: {impaling: 7}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: RARO, nombre: "Libro de Suerte del Mar V", encantamientos: {luck_of_the_sea: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: RARO, nombre: "Libro de Atraccion V", encantamientos: {lure: 5}}
+    - {material: ENCHANTED_GOLDEN_APPLE, min: 1, max: 1, peso: 4, rareza: EPICO}
+    - {material: NETHERITE_INGOT, min: 1, max: 1, peso: 2.5, rareza: EPICO}
     - {material: NETHERITE_UPGRADE_SMITHING_TEMPLATE, min: 1, max: 1, peso: 2, rareza: EPICO}
-
-    # ---------- LEGENDARIO (muy baja probabilidad) ----------
-    - material: NETHERITE_SWORD
-      peso: 0.6
-      rareza: LEGENDARIO
-      nombre: "Espada del Laberinto"
-      encantamientos: {sharpness: 7, unbreaking: 5, looting: 5, fire_aspect: 3, sweeping_edge: 5, mending: 1}
-    - material: NETHERITE_PICKAXE
-      peso: 0.6
-      rareza: LEGENDARIO
-      nombre: "Pico del Laberinto"
-      encantamientos: {efficiency: 7, unbreaking: 5, fortune: 5, mending: 1}
-    - material: NETHERITE_AXE
-      peso: 0.4
-      rareza: LEGENDARIO
-      nombre: "Hacha del Laberinto"
-      encantamientos: {sharpness: 7, efficiency: 7, unbreaking: 5, mending: 1}
-    - material: NETHERITE_SHOVEL
-      peso: 0.3
-      rareza: LEGENDARIO
-      nombre: "Pala del Laberinto"
-      encantamientos: {efficiency: 7, unbreaking: 5, silk_touch: 1, mending: 1}
-    - material: BOW
-      peso: 0.4
-      rareza: LEGENDARIO
-      nombre: "Arco del Laberinto"
-      encantamientos: {power: 7, punch: 3, flame: 1, unbreaking: 5, mending: 1}
-    - material: NETHERITE_CHESTPLATE
-      peso: 0.3
-      rareza: LEGENDARIO
-      nombre: "Peto del Laberinto"
-      encantamientos: {protection: 6, unbreaking: 5, mending: 1}
+    - {material: NETHER_STAR, min: 1, max: 1, peso: 1.2, rareza: EPICO}
+    - {material: RECOVERY_COMPASS, min: 1, max: 1, peso: 1.5, rareza: EPICO}
+    - {material: HEAVY_CORE, min: 1, max: 1, peso: 1, rareza: EPICO}
+    - {material: SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 1.5, rareza: EPICO}
+    - {material: WARD_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 1.5, rareza: EPICO}
+    - {material: TOTEM_OF_UNDYING, min: 2, max: 3, peso: 2, rareza: EPICO}
+    - {material: DIAMOND_BLOCK, min: 3, max: 5, peso: 2, rareza: EPICO}
+    - {material: ENCHANTED_GOLDEN_APPLE, min: 2, max: 3, peso: 1, rareza: EPICO, niveles: {FACIL: 0}}
+    - {material: BEACON, min: 1, max: 1, peso: 0.6, rareza: EPICO, niveles: {FACIL: 0}}
+    - {material: NETHERITE_BLOCK, min: 1, max: 1, peso: 0.5, rareza: EPICO, niveles: {FACIL: 0}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 1.5, rareza: EPICO, nombre: "Libro de Afilado VII", encantamientos: {sharpness: 7}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: EPICO, nombre: "Libro de Proteccion VI", encantamientos: {protection: 6}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: EPICO, nombre: "Libro de Eficiencia VII", encantamientos: {efficiency: 7}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: EPICO, nombre: "Libro de Fortuna V", encantamientos: {fortune: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: EPICO, nombre: "Libro de Botin V", encantamientos: {looting: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: EPICO, nombre: "Libro de Poder VII", encantamientos: {power: 7}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 1.5, rareza: EPICO, nombre: "Libro de Densidad VII", encantamientos: {density: 7}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 1.5, rareza: EPICO, nombre: "Libro de Brecha VI", encantamientos: {breach: 6}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 1.5, rareza: EPICO, nombre: "Libro de Rafaga V", encantamientos: {wind_burst: 5}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 2, rareza: EPICO, nombre: "Libro de Reparacion + Irrompibilidad V", encantamientos: {mending: 1, unbreaking: 5}}
+    - {material: DIAMOND_SWORD, peso: 1.2, rareza: EPICO, nombre: "Espada de Diamante Reforzada", encantamientos: {sharpness: 6, unbreaking: 4, looting: 4, fire_aspect: 2, mending: 1}, habilidad: espada_gelida}
+    - {material: DIAMOND_PICKAXE, peso: 1.2, rareza: EPICO, nombre: "Pico de Diamante Reforzado", encantamientos: {efficiency: 6, unbreaking: 4, fortune: 4, mending: 1}, habilidad: pico_veloz}
+    - {material: DIAMOND_CHESTPLATE, peso: 1.0, rareza: EPICO, nombre: "Peto de Diamante Reforzado", encantamientos: {protection: 5, unbreaking: 4, mending: 1}, habilidad: peto_firme}
+    - {material: FISHING_ROD, peso: 1.2, rareza: EPICO, nombre: "Cana del Laberinto", encantamientos: {luck_of_the_sea: 5, lure: 5, unbreaking: 4, mending: 1}, habilidad: cana_gancho}
+    - {material: NETHERITE_SWORD, peso: 0.6, rareza: LEGENDARIO, nombre: "Espada del Laberinto", encantamientos: {sharpness: 7, unbreaking: 5, looting: 5, fire_aspect: 3, sweeping_edge: 5, mending: 1}, habilidad: espada_vampirica}
+    - {material: NETHERITE_PICKAXE, peso: 0.6, rareza: LEGENDARIO, nombre: "Pico del Laberinto", encantamientos: {efficiency: 7, unbreaking: 5, fortune: 5, mending: 1}, habilidad: pico_minero}
+    - {material: NETHERITE_AXE, peso: 0.4, rareza: LEGENDARIO, nombre: "Hacha del Laberinto", encantamientos: {sharpness: 7, efficiency: 7, unbreaking: 5, mending: 1}, habilidad: hacha_berserker}
+    - {material: NETHERITE_SHOVEL, peso: 0.3, rareza: LEGENDARIO, nombre: "Pala del Laberinto", encantamientos: {efficiency: 7, unbreaking: 5, silk_touch: 1, mending: 1}, habilidad: pala_arena}
+    - {material: BOW, peso: 0.4, rareza: LEGENDARIO, nombre: "Arco del Laberinto", encantamientos: {power: 7, punch: 3, flame: 1, unbreaking: 5, mending: 1}, habilidad: arco_tormenta}
+    - {material: CROSSBOW, peso: 0.3, rareza: LEGENDARIO, nombre: "Ballesta del Laberinto", encantamientos: {quick_charge: 4, multishot: 1, piercing: 5, unbreaking: 5, mending: 1}, habilidad: ballesta_cazadora}
+    - {material: TRIDENT, peso: 0.3, rareza: LEGENDARIO, nombre: "Tridente del Laberinto", encantamientos: {impaling: 7, loyalty: 5, channeling: 1, unbreaking: 5, mending: 1}, habilidad: tridente_trueno}
+    - {material: MACE, peso: 0.25, rareza: LEGENDARIO, nombre: "Maza del Laberinto", encantamientos: {density: 7, breach: 6, wind_burst: 4, unbreaking: 5, mending: 1}, habilidad: maza_sismica}
+    - {material: NETHERITE_HELMET, peso: 0.3, rareza: LEGENDARIO, nombre: "Casco del Laberinto", encantamientos: {protection: 6, unbreaking: 5, respiration: 4, aqua_affinity: 1, mending: 1}, habilidad: casco_ojo}
+    - {material: NETHERITE_CHESTPLATE, peso: 0.3, rareza: LEGENDARIO, nombre: "Peto del Laberinto", encantamientos: {protection: 6, unbreaking: 5, mending: 1}, habilidad: peto_espinas}
+    - {material: NETHERITE_LEGGINGS, peso: 0.3, rareza: LEGENDARIO, nombre: "Pantalones del Laberinto", encantamientos: {protection: 6, unbreaking: 5, swift_sneak: 5, mending: 1}, habilidad: grebas_sombra}
+    - {material: NETHERITE_BOOTS, peso: 0.3, rareza: LEGENDARIO, nombre: "Botas del Laberinto", encantamientos: {protection: 6, unbreaking: 5, feather_falling: 6, depth_strider: 4, soul_speed: 4, mending: 1}, habilidad: botas_viento}
+    - {material: ELYTRA, peso: 0.2, rareza: LEGENDARIO, nombre: "Alas del Laberinto", encantamientos: {unbreaking: 5, mending: 1}, habilidad: alas_fantasma}
