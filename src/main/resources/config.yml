@@ -1,4 +1,4 @@
-# ===== LaberintoMobs 1.3.0 =====
+# ===== LaberintoMobs 1.4.0 =====
 # La zona se configura con /laberinto pos1 y /laberinto pos2 (o editando estos numeros).
 # Despues: /laberinto reload
 zona:
@@ -32,6 +32,11 @@ efectos:
   velocidad: 1
 mobs:
   pesos:
+    HUSK: 10
+    SKELETON: 8
+    PILLAGER: 10
+    PIGLIN: 12
+    HOGLIN: 8
     PIGLIN_BRUTE: 25
     EVOKER: 20
     WITHER_SKELETON: 25
@@ -70,7 +75,7 @@ dificultad:
       spawn: {max-total: 30, max-por-jugador: 15, por-ciclo: 2}
       efectos: {fuerza: 0, velocidad: 0}
       vida-multiplicador: 1.0
-      mobs: {VINDICATOR: 24, BOGGED: 18, STRAY: 16, WITCH: 10, PIGLIN_BRUTE: 12, ENDERMAN: 8, WITHER_SKELETON: 6}
+      mobs: {HUSK: 18, ZOMBIE: 16, SKELETON: 14, SPIDER: 12, CAVE_SPIDER: 8, SILVERFISH: 8, PILLAGER: 10, VINDICATOR: 16, BOGGED: 14, STRAY: 12, WITCH: 8, PIGLIN_BRUTE: 8, ENDERMAN: 6, WITHER_SKELETON: 4}
       loot:
         cantidad: 7
         tiradas-min: 1
@@ -83,12 +88,12 @@ dificultad:
       spawn: {max-total: 60, max-por-jugador: 30, por-ciclo: 4}
       efectos: {fuerza: 1, velocidad: 1}
       vida-multiplicador: 1.0
-      mobs: {PIGLIN_BRUTE: 25, EVOKER: 20, WITHER_SKELETON: 25, ENDERMAN: 20, RAVAGER: 8, VINDICATOR: 22, BOGGED: 12, STRAY: 10, WITCH: 10, ZOGLIN: 12, BLAZE: 10, BREEZE: 8, ILLUSIONER: 5}
+      mobs: {PIGLIN_BRUTE: 25, EVOKER: 20, WITHER_SKELETON: 25, ENDERMAN: 20, RAVAGER: 8, VINDICATOR: 22, BOGGED: 12, STRAY: 10, WITCH: 10, ZOGLIN: 12, BLAZE: 10, BREEZE: 8, ILLUSIONER: 5, PIGLIN: 12, HOGLIN: 8, HUSK: 10, SKELETON: 8, CAVE_SPIDER: 8, PILLAGER: 10, VEX: 4}
       loot:
         cantidad: 10
         tiradas-min: 1
         tiradas-max: 2
-        rareza: {COMUN: 1.0, RARO: 1.0, EPICO: 1.0, LEGENDARIO: 1.0}
+        rareza: {COMUN: 1.0, RARO: 1.0, EPICO: 1.0, LEGENDARIO: 1.4}
       recompensa-mobs: {xp-multiplicador: 1.5, drop-chance: 0.05, drop-rareza-maxima: RARO}
     DIFICIL:
       nombre: Dificil
@@ -96,12 +101,12 @@ dificultad:
       spawn: {max-total: 80, max-por-jugador: 40, por-ciclo: 5}
       efectos: {fuerza: 2, velocidad: 1}
       vida-multiplicador: 1.4
-      mobs: {PIGLIN_BRUTE: 24, EVOKER: 24, WITHER_SKELETON: 28, ENDERMAN: 18, RAVAGER: 16, VINDICATOR: 14, BOGGED: 6, STRAY: 4, WITCH: 10, ZOGLIN: 18, BLAZE: 16, BREEZE: 14, ILLUSIONER: 12}
+      mobs: {PIGLIN_BRUTE: 24, EVOKER: 24, WITHER_SKELETON: 28, ENDERMAN: 18, RAVAGER: 16, VINDICATOR: 14, BOGGED: 6, STRAY: 4, WITCH: 10, ZOGLIN: 18, BLAZE: 16, BREEZE: 14, ILLUSIONER: 12, HOGLIN: 12, VEX: 8, DROWNED: 8, PIGLIN: 8, PILLAGER: 6}
       loot:
         cantidad: 14
         tiradas-min: 1
         tiradas-max: 3
-        rareza: {COMUN: 0.5, RARO: 1.2, EPICO: 2.0, LEGENDARIO: 2.5}
+        rareza: {COMUN: 0.5, RARO: 1.1, EPICO: 2.0, LEGENDARIO: 4.5}
       recompensa-mobs: {xp-multiplicador: 2.5, drop-chance: 0.10, drop-rareza-maxima: EPICO}
 
 # ===================================================================
@@ -260,3 +265,68 @@ loot:
     - {material: NETHERITE_LEGGINGS, peso: 0.3, rareza: LEGENDARIO, nombre: "Pantalones del Laberinto", encantamientos: {protection: 6, unbreaking: 5, swift_sneak: 5, mending: 1}, habilidad: grebas_sombra}
     - {material: NETHERITE_BOOTS, peso: 0.3, rareza: LEGENDARIO, nombre: "Botas del Laberinto", encantamientos: {protection: 6, unbreaking: 5, feather_falling: 6, depth_strider: 4, soul_speed: 4, mending: 1}, habilidad: botas_viento}
     - {material: ELYTRA, peso: 0.2, rareza: LEGENDARIO, nombre: "Alas del Laberinto", encantamientos: {unbreaking: 5, mending: 1}, habilidad: alas_fantasma}
+    - {material: TORCH, min: 32, max: 64, peso: 14, rareza: COMUN, niveles: {FACIL: 1.5, DIFICIL: 0.6}}
+    - {material: ARROW, min: 32, max: 64, peso: 14, rareza: COMUN, niveles: {FACIL: 1.5, DIFICIL: 0.6}}
+    - {material: IRON_INGOT, min: 8, max: 16, peso: 16, rareza: COMUN, niveles: {FACIL: 1.5, DIFICIL: 0.6}}
+    - {material: COOKED_SALMON, min: 16, max: 32, peso: 10, rareza: COMUN, niveles: {FACIL: 1.5, DIFICIL: 0.6}}
+    - {material: GLOW_BERRIES, min: 8, max: 16, peso: 10, rareza: COMUN, niveles: {FACIL: 1.5, DIFICIL: 0.6}}
+    - {material: REDSTONE, min: 16, max: 32, peso: 10, rareza: COMUN}
+    - {material: COBWEB, min: 8, max: 16, peso: 8, rareza: COMUN}
+    - {material: SLIME_BALL, min: 4, max: 8, peso: 8, rareza: COMUN}
+    - {material: AMETHYST_SHARD, min: 8, max: 16, peso: 8, rareza: COMUN}
+    - {material: PHANTOM_MEMBRANE, min: 2, max: 4, peso: 8, rareza: COMUN}
+    - {material: HONEY_BOTTLE, min: 3, max: 6, peso: 8, rareza: COMUN, niveles: {FACIL: 0.7, DIFICIL: 1.6}}
+    - {material: BLAZE_POWDER, min: 6, max: 12, peso: 8, rareza: COMUN}
+    - {material: MAGMA_CREAM, min: 3, max: 6, peso: 6, rareza: COMUN}
+    - {material: CHORUS_FRUIT, min: 4, max: 8, peso: 8, rareza: COMUN}
+    - {material: WATER_BUCKET, min: 1, max: 1, peso: 8, rareza: COMUN, niveles: {FACIL: 0.7, DIFICIL: 1.6}}
+    - {material: MILK_BUCKET, min: 1, max: 1, peso: 10, rareza: COMUN, niveles: {FACIL: 0.7, DIFICIL: 1.6}}
+    - {material: POTION, min: 1, max: 1, peso: 8, rareza: COMUN, pocion: long_night_vision}
+    - {material: POTION, min: 1, max: 1, peso: 8, rareza: COMUN, pocion: long_slow_falling}
+    - {material: BREEZE_ROD, min: 3, max: 6, peso: 4, rareza: RARO, niveles: {FACIL: 0, DIFICIL: 1.5}}
+    - {material: ARMADILLO_SCUTE, min: 2, max: 4, peso: 4, rareza: RARO}
+    - {material: RESPAWN_ANCHOR, min: 1, max: 1, peso: 4, rareza: RARO, niveles: {FACIL: 0.5, DIFICIL: 1.3}}
+    - {material: LODESTONE, min: 1, max: 1, peso: 4, rareza: RARO}
+    - {material: SPYGLASS, min: 1, max: 1, peso: 5, rareza: RARO}
+    - {material: TURTLE_HELMET, min: 1, max: 1, peso: 3.5, rareza: RARO}
+    - {material: SADDLE, min: 1, max: 1, peso: 4, rareza: RARO}
+    - {material: DIAMOND_HORSE_ARMOR, min: 1, max: 1, peso: 3, rareza: RARO}
+    - {material: TRIAL_KEY, min: 1, max: 1, peso: 3, rareza: RARO}
+    - {material: WITHER_ROSE, min: 1, max: 2, peso: 3, rareza: RARO}
+    - {material: CREEPER_HEAD, min: 1, max: 1, peso: 3, rareza: RARO}
+    - {material: SKELETON_SKULL, min: 1, max: 1, peso: 3, rareza: RARO}
+    - {material: PIGLIN_HEAD, min: 1, max: 1, peso: 2.5, rareza: RARO}
+    - {material: TIPPED_ARROW, min: 8, max: 16, peso: 4, rareza: RARO, pocion: strong_harming, niveles: {FACIL: 0.3, DIFICIL: 1.6}}
+    - {material: TIPPED_ARROW, min: 8, max: 16, peso: 3, rareza: RARO, pocion: strong_poison, niveles: {FACIL: 0.3, DIFICIL: 1.6}}
+    - {material: SPLASH_POTION, min: 1, max: 2, peso: 4, rareza: RARO, pocion: strong_harming, niveles: {FACIL: 0.3, DIFICIL: 1.6}}
+    - {material: LINGERING_POTION, min: 1, max: 1, peso: 3, rareza: RARO, pocion: strong_healing, niveles: {FACIL: 0.7, DIFICIL: 1.6}}
+    - {material: POTION, min: 1, max: 1, peso: 4, rareza: RARO, pocion: strong_leaping}
+    - {material: MUSIC_DISC_PRECIPICE, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: MUSIC_DISC_CREATOR, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: DISC_FRAGMENT_5, min: 2, max: 5, peso: 3, rareza: RARO}
+    - {material: SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: HOST_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: WILD_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: FLOW_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: BOLT_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 2, rareza: RARO}
+    - {material: COMPASS, peso: 3, rareza: RARO, nombre: "Brujula del Tesoro", encantamientos: {unbreaking: 3}, habilidad: brujula_tesoro}
+    - {material: IRON_PICKAXE, peso: 3, rareza: RARO, nombre: "Pico Fundidor", encantamientos: {efficiency: 5, unbreaking: 4, fortune: 3, mending: 1}, habilidad: pico_fundidor}
+    - {material: IRON_AXE, peso: 3, rareza: RARO, nombre: "Hacha Lenadora", encantamientos: {efficiency: 5, sharpness: 5, unbreaking: 4, mending: 1}, habilidad: hacha_lenador}
+    - {material: DRAGON_HEAD, min: 1, max: 1, peso: 1, rareza: EPICO}
+    - {material: CONDUIT, min: 1, max: 1, peso: 0.6, rareza: EPICO, niveles: {FACIL: 0}}
+    - {material: EYE_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 1.2, rareza: EPICO}
+    - {material: SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE, min: 1, max: 1, peso: 1.2, rareza: EPICO}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 1, rareza: EPICO, nombre: "Libro del Guerrero", encantamientos: {sharpness: 6, looting: 4, sweeping_edge: 4, fire_aspect: 3}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 1, rareza: EPICO, nombre: "Libro del Minero", encantamientos: {efficiency: 6, fortune: 4, unbreaking: 4}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 1, rareza: EPICO, nombre: "Libro del Arquero", encantamientos: {power: 6, punch: 3, flame: 1, unbreaking: 4}}
+    - {material: ENCHANTED_BOOK, min: 1, max: 1, peso: 1, rareza: EPICO, nombre: "Libro del Guardian", encantamientos: {protection: 5, unbreaking: 4, mending: 1, thorns: 3}}
+    - {material: DIAMOND_SWORD, peso: 1.0, rareza: EPICO, nombre: "Espada del Vacio", encantamientos: {sharpness: 6, unbreaking: 4, looting: 4, mending: 1}, habilidad: espada_vacio, niveles: {FACIL: 0.4, DIFICIL: 1.5}}
+    - {material: DIAMOND_AXE, peso: 1.0, rareza: EPICO, nombre: "Hacha del Verdugo", encantamientos: {sharpness: 6, efficiency: 6, unbreaking: 4, mending: 1}, habilidad: hacha_verdugo, niveles: {FACIL: 0.4, DIFICIL: 1.5}}
+    - {material: BOW, peso: 1.0, rareza: EPICO, nombre: "Arco Toxico", encantamientos: {power: 6, punch: 2, unbreaking: 4, mending: 1}, habilidad: arco_toxico, niveles: {FACIL: 0.4, DIFICIL: 1.5}}
+    - {material: SHIELD, peso: 1.0, rareza: EPICO, nombre: "Escudo del Titan", encantamientos: {unbreaking: 5, mending: 1}, habilidad: escudo_titan, niveles: {FACIL: 0.4, DIFICIL: 1.5}}
+    - {material: GOLDEN_HELMET, peso: 1.0, rareza: EPICO, nombre: "Corona del Rey", encantamientos: {protection: 5, unbreaking: 4, respiration: 3, mending: 1}, habilidad: corona_rey, niveles: {FACIL: 0.4, DIFICIL: 1.5}}
+    - {material: DIAMOND_LEGGINGS, peso: 1.0, rareza: EPICO, nombre: "Grebas de Magma", encantamientos: {protection: 5, unbreaking: 4, swift_sneak: 4, mending: 1}, habilidad: grebas_magma, niveles: {FACIL: 0.4, DIFICIL: 1.5}}
+    - {material: DIAMOND_BOOTS, peso: 1.0, rareza: EPICO, nombre: "Botas Sismicas", encantamientos: {protection: 5, unbreaking: 4, feather_falling: 5, mending: 1}, habilidad: botas_sismicas, niveles: {FACIL: 0.4, DIFICIL: 1.5}}
+    - {material: NETHERITE_HOE, peso: 0.25, rareza: LEGENDARIO, nombre: "Guadana del Laberinto", encantamientos: {sharpness: 7, efficiency: 7, unbreaking: 5, looting: 4, mending: 1}, habilidad: azada_segadora}
+    - {material: GOLDEN_SWORD, peso: 0.3, rareza: LEGENDARIO, nombre: "Daga del Asesino", encantamientos: {sharpness: 7, unbreaking: 5, looting: 5, sweeping_edge: 3, mending: 1}, habilidad: daga_asesina}
+    - {material: DIAMOND_CHESTPLATE, peso: 0.2, rareza: LEGENDARIO, nombre: "Peto del Fenix", encantamientos: {protection: 6, unbreaking: 5, mending: 1}, habilidad: peto_fenix, niveles: {FACIL: 0}}

@@ -79,6 +79,7 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
         loadSettings();
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(loot, this);
+        habilidades.setLoot(loot);
         getServer().getPluginManager().registerEvents(habilidades, this);
         var cmd = getCommand("laberinto");
         if (cmd != null) {
@@ -257,7 +258,8 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
     }
 
     private Location findSpot(Player p, EntityType type, World w) {
-        int clearance = (type == EntityType.RAVAGER || type == EntityType.ZOGLIN) ? 1 : 0; // el Ravager es ancho: necesita espacio
+        int clearance = (type == EntityType.RAVAGER || type == EntityType.ZOGLIN
+                || type == EntityType.HOGLIN || type == EntityType.SPIDER) ? 1 : 0; // el Ravager es ancho: necesita espacio
         Location pl = p.getLocation();
         int baseY = pl.getBlockY();
         int[] offsets = {0, -1, 1, -2};

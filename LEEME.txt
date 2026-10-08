@@ -1,4 +1,4 @@
-LaberintoMobs 1.3.0 - plugin para Paper 26.x (Java 25)
+LaberintoMobs 1.4.0 - plugin para Paper 26.x (Java 25)
 
 INSTALACION
 1) Sube el contenido de esta carpeta a tu GitHub y descarga el .jar compilado (Actions).
@@ -21,3 +21,8 @@ BOTIN
 HABILIDADES UNICAS
 Los items legendarios (y algunos epicos/raros) traen poderes. Se leen en el lore.
 Se asignan con  habilidad: <id>  en loot.items del config.
+
+NOVEDADES 1.4.0
+- 186 items de botin, 32 habilidades unicas, mobs nuevos por dificultad.
+- Clic derecho: Espada del Vacio (salto) y Brujula del Tesoro (indica el botin mas cercano).
+- En DIFICIL los cofres legendarios salen ~3.5 veces mas que en MEDIO.

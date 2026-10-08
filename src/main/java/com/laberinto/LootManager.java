@@ -439,6 +439,21 @@ final class LootManager implements Listener {
         return spots.size();
     }
 
+    /** Ubicacion del botin activo mas cercano (null si no hay). */
+    Location nearest(Location from) {
+        Location best = null;
+        double bd = Double.MAX_VALUE;
+        for (Spot sp : spots) {
+            if (sp.loc.getWorld() == null || !sp.loc.getWorld().equals(from.getWorld())) continue;
+            double d = sp.loc.distanceSquared(from);
+            if (d < bd) {
+                bd = d;
+                best = sp.loc;
+            }
+        }
+        return best == null ? null : best.clone();
+    }
+
     // ---------------------------------------------------------------- eventos
 
     @EventHandler(priority = EventPriority.HIGH)

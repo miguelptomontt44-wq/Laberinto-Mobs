@@ -4,15 +4,19 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
+import org.bukkit.Tag;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.AbstractArrow;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
@@ -21,19 +25,31 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,16 +113,80 @@ final class Habilidades implements Listener {
                 "Al bloquear un golpe, empuja al atacante y le hace 4 de dano.");
     }
 
+    static {
+        // ---- nuevas armas / herramientas
+        reg("azada_segadora", "Guadana Segadora",
+                "Cada golpe corta tambien a los enemigos a 3 bloques (50% del dano).");
+        reg("daga_asesina", "Punalada Trapera",
+                "Golpear por la espalda: +75% de dano.", "Al sostenerla: Velocidad I.");
+        reg("hacha_verdugo", "Hacha del Verdugo",
+                "+50% de dano a enemigos con menos del 30% de vida.");
+        reg("arco_toxico", "Flechas Toxicas",
+                "Veneno II (5s), Lentitud y Debilidad al enemigo.");
+        reg("espada_vacio", "Salto del Vacio",
+                "Clic derecho: te teletransportas hasta 10 bloques hacia donde miras.", "Enfriamiento: 6s.");
+        reg("pico_fundidor", "Pico Fundidor",
+                "Los minerales se funden solos al romperlos.");
+        reg("hacha_lenador", "Hacha Lenadora",
+                "Talas el arbol completo de un golpe (agachate para talar normal).");
+        reg("brujula_tesoro", "Brujula del Tesoro",
+                "Clic derecho: indica distancia y direccion del botin mas cercano.");
+        // ---- nuevas defensas
+        reg("escudo_titan", "Escudo del Titan",
+                "Mientras bloqueas: Resistencia II.");
+        reg("corona_rey", "Corona del Rey",
+                "Cada 20s ganas Absorcion II (4 corazones extra).");
+        reg("peto_fenix", "Renacer del Fenix",
+                "Si recibes un golpe mortal, sobrevives con 5 corazones y te regeneras.", "Enfriamiento: 5 min.");
+        reg("grebas_magma", "Aura de Magma",
+                "Los monstruos a 2 bloques de ti se prenden fuego.", "Inmunidad al fuego.");
+        reg("botas_sismicas", "Pisada Sismica",
+                "Sin dano por caida: aterrizar crea una onda que danha a los enemigos cercanos.");
+    }
+
     static NamespacedKey key;
 
     private final JavaPlugin plugin;
     private final Random rnd = new Random();
     private boolean enabled = true, pvp = true, setComplete = true;
     private boolean busy; // evita que un efecto dispare otros efectos en cadena
+    private LootManager loot;
+    private final Map<String, Long> cooldowns = new HashMap<>();
+
+    private static final Map<Material, Material> SMELT = Map.of(
+            Material.RAW_IRON, Material.IRON_INGOT,
+            Material.RAW_GOLD, Material.GOLD_INGOT,
+            Material.RAW_COPPER, Material.COPPER_INGOT,
+            Material.ANCIENT_DEBRIS, Material.NETHERITE_SCRAP,
+            Material.COBBLESTONE, Material.STONE,
+            Material.COBBLED_DEEPSLATE, Material.DEEPSLATE,
+            Material.SAND, Material.GLASS,
+            Material.RED_SAND, Material.GLASS,
+            Material.NETHERRACK, Material.NETHER_BRICK,
+            Material.CLAY_BALL, Material.BRICK);
 
     Habilidades(JavaPlugin plugin) {
         this.plugin = plugin;
         key = new NamespacedKey(plugin, "habilidad");
+    }
+
+    void setLoot(LootManager l) {
+        this.loot = l;
+    }
+
+    /** true (y arranca el enfriamiento) si ya paso el tiempo desde el ultimo uso. */
+    private boolean ready(Player p, String ability, long ms) {
+        String k = p.getUniqueId() + ability;
+        long now = System.currentTimeMillis();
+        Long last = cooldowns.get(k);
+        if (last != null && now - last < ms) return false;
+        cooldowns.put(k, now);
+        return true;
+    }
+
+    private double maxHealth(LivingEntity e) {
+        AttributeInstance ai = e.getAttribute(Attribute.MAX_HEALTH);
+        return ai == null ? 20.0 : ai.getValue();
     }
 
     void load(FileConfiguration c) {
@@ -186,7 +266,7 @@ final class Habilidades implements Listener {
         hurtLater(by, target, dmg);
     }
 
-    private void shockwave(Player attacker, LivingEntity center) {
+    private void shockwave(Player attacker, LivingEntity center, double damage) {
         Location c = center.getLocation();
         c.getWorld().spawnParticle(Particle.CLOUD, c, 40, 1.6, 0.2, 1.6, 0.08);
         c.getWorld().playSound(c, Sound.ENTITY_PLAYER_ATTACK_KNOCKBACK, 1.2f, 0.6f);
@@ -200,7 +280,7 @@ final class Habilidades implements Listener {
             }
             v.setY(0.45);
             le.setVelocity(v);
-            hurtLater(attacker, le, 4.0);
+            hurtLater(attacker, le, damage);
         }
     }
 
@@ -274,7 +354,38 @@ final class Habilidades implements Listener {
             }
             case "maza_sismica" -> {
                 effect(t, PotionEffectType.SLOWNESS, 60, 1);
-                if (a.getFallDistance() > 1.5f) shockwave(a, t);
+                if (a.getFallDistance() > 1.5f) shockwave(a, t, 4.0);
+            }
+            case "azada_segadora" -> {
+                double dmg = e.getFinalDamage() * 0.5;
+                t.getWorld().spawnParticle(Particle.SWEEP_ATTACK, t.getLocation().add(0, 1, 0), 3, 1.0, 0.2, 1.0, 0);
+                for (Entity en : t.getNearbyEntities(3, 1.5, 3)) {
+                    if (!(en instanceof LivingEntity le) || le.equals(a) || le instanceof ArmorStand) continue;
+                    if (le instanceof Player && !pvp) continue;
+                    hurtLater(a, le, dmg);
+                }
+            }
+            case "daga_asesina" -> {
+                Vector facing = t.getLocation().getDirection().setY(0);
+                Vector toT = t.getLocation().toVector().subtract(a.getLocation().toVector()).setY(0);
+                if (facing.lengthSquared() > 0.01 && toT.lengthSquared() > 0.01
+                        && facing.normalize().dot(toT.normalize()) > 0.5) {
+                    hurtLater(a, t, e.getFinalDamage() * 0.75);
+                    t.getWorld().spawnParticle(Particle.CRIT, tl, 25, 0.3, 0.4, 0.3, 0.3);
+                    a.sendActionBar(Component.text("Punalada trapera!", NamedTextColor.DARK_RED));
+                }
+            }
+            case "hacha_verdugo" -> {
+                if (hpFraction(t) < 0.30) {
+                    hurtLater(a, t, e.getFinalDamage() * 0.5);
+                    t.getWorld().spawnParticle(Particle.CRIT, tl, 20, 0.3, 0.4, 0.3, 0.3);
+                }
+            }
+            case "arco_toxico" -> {
+                if (!ranged) return;
+                effect(t, PotionEffectType.POISON, 100, 1);
+                effect(t, PotionEffectType.SLOWNESS, 60, 0);
+                effect(t, PotionEffectType.WEAKNESS, 100, 0);
             }
             case "espada_gelida" -> {
                 if (chance(0.25)) {
@@ -328,10 +439,37 @@ final class Habilidades implements Listener {
     public void onDamage(EntityDamageEvent e) {
         if (!enabled || !(e.getEntity() instanceof Player p)) return;
         PlayerInventory inv = p.getInventory();
-        switch (e.getCause()) {
+        EntityDamageEvent.DamageCause cause = e.getCause();
+
+        // Renacer del Fenix: sobrevive a un golpe mortal (cada 5 minutos)
+        if (cause != EntityDamageEvent.DamageCause.VOID && cause != EntityDamageEvent.DamageCause.KILL
+                && cause != EntityDamageEvent.DamageCause.SUICIDE
+                && "peto_fenix".equals(idOf(inv.getChestplate()))
+                && p.getHealth() - e.getFinalDamage() <= 0
+                && ready(p, "fenix", 300_000L)) {
+            e.setCancelled(true);
+            p.setHealth(Math.min(10.0, maxHealth(p)));
+            give(p, PotionEffectType.REGENERATION, 100, 1);
+            give(p, PotionEffectType.RESISTANCE, 100, 1);
+            give(p, PotionEffectType.FIRE_RESISTANCE, 200, 0);
+            Location l = p.getLocation().add(0, 1, 0);
+            p.getWorld().spawnParticle(Particle.FLAME, l, 60, 0.5, 0.8, 0.5, 0.1);
+            p.getWorld().spawnParticle(Particle.END_ROD, l, 30, 0.5, 0.8, 0.5, 0.1);
+            p.getWorld().playSound(l, Sound.ITEM_TOTEM_USE, 1f, 1f);
+            p.sendMessage(Component.text("El Peto del Fenix te salvo la vida!", NamedTextColor.GOLD));
+            return;
+        }
+
+        switch (cause) {
             case FALL -> {
                 String b = idOf(inv.getBoots());
-                if ("botas_viento".equals(b) || "botas_ligeras".equals(b)) e.setCancelled(true);
+                if ("botas_sismicas".equals(b)) {
+                    double d = e.getDamage();
+                    e.setCancelled(true);
+                    if (d >= 2.0) shockwave(p, p, Math.min(10.0, d * 0.8));
+                } else if ("botas_viento".equals(b) || "botas_ligeras".equals(b)) {
+                    e.setCancelled(true);
+                }
             }
             case FLY_INTO_WALL -> {
                 if ("alas_fantasma".equals(idOf(inv.getChestplate()))) e.setCancelled(true);
@@ -339,6 +477,143 @@ final class Habilidades implements Listener {
             default -> {
             }
         }
+    }
+
+    // ---------------------------------------------------------------- clic derecho (habilidades activas)
+
+    @EventHandler
+    public void onUse(PlayerInteractEvent e) {
+        if (!enabled || e.getHand() != EquipmentSlot.HAND) return;
+        if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        Player p = e.getPlayer();
+        String id = idOf(p.getInventory().getItemInMainHand());
+        if (id == null) return;
+        switch (id) {
+            case "espada_vacio" -> blink(p);
+            case "brujula_tesoro" -> compass(p);
+            default -> {
+            }
+        }
+    }
+
+    private void blink(Player p) {
+        if (!ready(p, "vacio", 6000L)) {
+            p.sendActionBar(Component.text("Salto del Vacio en enfriamiento...", NamedTextColor.GRAY));
+            return;
+        }
+        Vector dir = p.getLocation().getDirection().normalize();
+        Location best = null;
+        for (int i = 1; i <= 10; i++) {
+            Location f = p.getLocation().add(dir.clone().multiply(i));
+            Block feet = f.getBlock();
+            Block head = f.clone().add(0, 1, 0).getBlock();
+            if (!feet.isPassable() || !head.isPassable() || feet.isLiquid()) break;
+            best = f;
+        }
+        if (best == null) {
+            cooldowns.remove(p.getUniqueId() + "vacio");
+            p.sendActionBar(Component.text("No hay espacio para saltar.", NamedTextColor.RED));
+            return;
+        }
+        Location from = p.getLocation().add(0, 1, 0);
+        p.getWorld().spawnParticle(Particle.PORTAL, from, 40, 0.3, 0.6, 0.3, 0.5);
+        p.teleport(best);
+        p.getWorld().spawnParticle(Particle.PORTAL, best.clone().add(0, 1, 0), 40, 0.3, 0.6, 0.3, 0.5);
+        p.getWorld().playSound(best, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1f);
+        p.setFallDistance(0f);
+    }
+
+    private void compass(Player p) {
+        if (!ready(p, "brujula", 2000L)) return;
+        Location t = loot == null ? null : loot.nearest(p.getLocation());
+        if (t == null) {
+            p.sendActionBar(Component.text("No hay botin cerca (o no estas en el laberinto).", NamedTextColor.GRAY));
+            return;
+        }
+        p.setCompassTarget(t);
+        Location pl = p.getLocation();
+        double dx = t.getX() - pl.getX();
+        double dz = t.getZ() - pl.getZ();
+        double yawTo = Math.toDegrees(Math.atan2(-dx, dz));
+        double rel = (((yawTo - pl.getYaw()) % 360) + 540) % 360 - 180;
+        int idx = (int) Math.round(rel / 45.0);
+        if (idx < 0) idx += 8;
+        String[] words = {"adelante", "adelante-derecha", "derecha", "atras-derecha",
+                "atras", "atras-izquierda", "izquierda", "adelante-izquierda"};
+        double dy = t.getY() - pl.getY();
+        String alt = dy > 3 ? " (arriba)" : dy < -3 ? " (abajo)" : "";
+        int dist = (int) Math.round(Math.sqrt(dx * dx + dz * dz));
+        p.sendActionBar(Component.text("Botin mas cercano: " + dist + " bloques, " + words[idx % 8] + alt,
+                NamedTextColor.GOLD));
+        p.playSound(pl, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.8f, 1.4f);
+    }
+
+    // ---------------------------------------------------------------- romper bloques
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBreak(BlockBreakEvent e) {
+        if (!enabled) return;
+        Player p = e.getPlayer();
+        if (p.getGameMode() == GameMode.CREATIVE) return;
+        ItemStack tool = p.getInventory().getItemInMainHand();
+        String id = idOf(tool);
+        if (id == null) return;
+        Block b = e.getBlock();
+
+        if (id.equals("pico_fundidor")) {
+            List<ItemStack> out = new ArrayList<>();
+            boolean changed = false;
+            Collection<ItemStack> drops = b.getDrops(tool, p);
+            for (ItemStack d : drops) {
+                Material sm = SMELT.get(d.getType());
+                if (sm != null) {
+                    out.add(new ItemStack(sm, d.getAmount()));
+                    changed = true;
+                } else {
+                    out.add(d);
+                }
+            }
+            if (!changed) return;
+            e.setDropItems(false);
+            Location l = b.getLocation().add(0.5, 0.5, 0.5);
+            for (ItemStack o : out) b.getWorld().dropItemNaturally(l, o);
+            b.getWorld().spawnParticle(Particle.FLAME, l, 10, 0.3, 0.3, 0.3, 0.02);
+        } else if (id.equals("hacha_lenador") && !p.isSneaking() && Tag.LOGS.isTagged(b.getType())) {
+            fell(b, tool);
+        }
+    }
+
+    /** Tala todos los troncos conectados (maximo 64) y gasta durabilidad. */
+    private void fell(Block start, ItemStack tool) {
+        Deque<Block> queue = new ArrayDeque<>();
+        Set<Block> seen = new HashSet<>();
+        queue.add(start);
+        seen.add(start);
+        ItemMeta meta = tool.getItemMeta();
+        Damageable dm = meta instanceof Damageable d ? d : null;
+        int maxDur = tool.getType().getMaxDurability();
+        int broken = 0;
+        while (!queue.isEmpty() && broken < 64) {
+            Block cur = queue.poll();
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (dx == 0 && dy == 0 && dz == 0) continue;
+                        Block n = cur.getRelative(dx, dy, dz);
+                        if (seen.size() < 200 && !seen.contains(n) && Tag.LOGS.isTagged(n.getType())) {
+                            seen.add(n);
+                            queue.add(n);
+                        }
+                    }
+                }
+            }
+            if (cur.equals(start)) continue;
+            if (dm != null && maxDur > 0 && dm.getDamage() + 1 >= maxDur) break;
+            cur.breakNaturally(tool);
+            if (dm != null) dm.setDamage(dm.getDamage() + 1);
+            broken++;
+        }
+        if (dm != null) tool.setItemMeta(dm);
     }
 
     // ---------------------------------------------------------------- proyectiles y cana
@@ -397,6 +672,25 @@ final class Habilidades implements Listener {
                 }
             }
             if ("peto_espinas".equals(c) || "peto_firme".equals(c)) give(p, PotionEffectType.FIRE_RESISTANCE, 60, 0);
+            if ("corona_rey".equals(h)) {
+                String k = p.getUniqueId() + "corona";
+                long now = System.currentTimeMillis();
+                Long last = cooldowns.get(k);
+                if (last == null || now - last >= 21_000L) {
+                    cooldowns.put(k, now);
+                    give(p, PotionEffectType.ABSORPTION, 400, 1);
+                }
+            }
+            if ("grebas_magma".equals(l)) {
+                give(p, PotionEffectType.FIRE_RESISTANCE, 60, 0);
+                for (Entity en : p.getNearbyEntities(2.5, 2, 2.5)) {
+                    if (en instanceof Monster) en.setFireTicks(60);
+                }
+                p.getWorld().spawnParticle(Particle.FLAME, p.getLocation().add(0, 0.2, 0), 4, 0.5, 0.1, 0.5, 0.01);
+            }
+            if (p.isBlocking() && ("escudo_titan".equals(m) || "escudo_titan".equals(idOf(inv.getItemInOffHand())))) {
+                give(p, PotionEffectType.RESISTANCE, 40, 1);
+            }
             if ("grebas_sombra".equals(l)) give(p, PotionEffectType.SPEED, 60, 0);
             if ("botas_viento".equals(b)) {
                 give(p, PotionEffectType.SPEED, 60, 0);
@@ -421,7 +715,7 @@ final class Habilidades implements Listener {
                         give(p, PotionEffectType.NIGHT_VISION, 300, 0);
                     }
                     case "pico_veloz" -> give(p, PotionEffectType.HASTE, 60, 0);
-                    case "pala_arena" -> give(p, PotionEffectType.SPEED, 60, 0);
+                    case "pala_arena", "daga_asesina" -> give(p, PotionEffectType.SPEED, 60, 0);
                     case "tridente_trueno" -> give(p, PotionEffectType.WATER_BREATHING, 60, 0);
                     default -> {
                     }
