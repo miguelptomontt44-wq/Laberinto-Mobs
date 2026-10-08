@@ -110,6 +110,10 @@ final class LootManager implements Listener {
 
     private LaberintoMobs.Zone zone;
     private int generation;
+    private int placed, collected, thresholdPct, thresholdDelay;
+    private boolean pendingThreshold;
+    private org.bukkit.scheduler.BukkitTask regenTask;
+    private long regenPeriod;
 
     private boolean enabled;
     private double regenMinutes;
@@ -135,6 +139,8 @@ final class LootManager implements Listener {
         announceRegen = c.getBoolean("loot.avisar-regeneracion", true);
         announceLegendary = c.getBoolean("loot.anunciar-legendarios", true);
         showDistance = Math.max(16, c.getDouble("loot.distancia-visible", 48));
+        thresholdPct = Math.max(0, Math.min(100, c.getInt("loot.regenerar-al-recolectar-porcentaje", 70)));
+        thresholdDelay = Math.max(0, c.getInt("loot.regenerar-retraso-segundos", 5));
 
         entries.clear();
         for (Map<?, ?> m : c.getMapList("loot.items")) {
@@ -208,8 +214,8 @@ final class LootManager implements Listener {
             removeAll();
             return;
         }
-        long period = Math.max(20L, (long) (regenMinutes * 60 * 20));
-        Bukkit.getScheduler().runTaskTimer(plugin, this::regenerate, 100L, period);
+        regenPeriod = Math.max(20L, (long) (regenMinutes * 60 * 20));
+        regenTask = Bukkit.getScheduler().runTaskTimer(plugin, this::regenerate, 100L, regenPeriod);
         Bukkit.getScheduler().runTaskTimer(plugin, this::refreshVisuals, 60L, 40L);
     }
 
@@ -217,6 +223,14 @@ final class LootManager implements Listener {
     void regenerate() {
         removeAll();
         generation++;
+        placed = 0;
+        collected = 0;
+        pendingThreshold = false;
+        // el reloj de los X minutos vuelve a empezar desde ahora
+        if (regenTask != null) {
+            regenTask.cancel();
+            regenTask = Bukkit.getScheduler().runTaskTimer(plugin, this::regenerate, regenPeriod, regenPeriod);
+        }
         if (!enabled || zone == null || entries.isEmpty() || level == null) return;
         World w = Bukkit.getWorld(zone.world());
         if (w == null) return;
@@ -229,6 +243,7 @@ final class LootManager implements Listener {
         if (st[0] >= amount || st[1] >= amount * 40) {
             plugin.getLogger().info("Botin del laberinto generado: " + st[0] + "/" + amount
                     + " (nivel " + level.name + ")");
+            placed = st[0];
             if (announceRegen && st[0] > 0) announceRegeneration(w);
             return;
         }
@@ -241,6 +256,27 @@ final class LootManager implements Listener {
                     if (tryAdd(w, x, z)) st[0]++;
                     plan(w, gen, st);
                 }));
+    }
+
+    /** Si ya se recolecto el X% del botin, genera uno nuevo sin esperar al reloj. */
+    private void checkThreshold() {
+        if (thresholdPct <= 0 || placed <= 0 || pendingThreshold) return;
+        if (collected * 100 < thresholdPct * placed) return;
+        pendingThreshold = true;
+        final int g = generation;
+        if (zone != null) {
+            World w = Bukkit.getWorld(zone.world());
+            if (w != null) {
+                Component m = Component.text("Casi todo el botin fue recogido! Nuevo botin en " + thresholdDelay
+                        + " segundos...", NamedTextColor.GOLD);
+                for (Player pl : w.getPlayers()) {
+                    if (zone.contains(pl.getLocation())) pl.sendMessage(m);
+                }
+            }
+        }
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (g == generation && pendingThreshold) regenerate();
+        }, thresholdDelay * 20L);
     }
 
     private void announceRegeneration(World w) {
@@ -439,6 +475,11 @@ final class LootManager implements Listener {
         return spots.size();
     }
 
+    String progress() {
+        return collected + "/" + placed + " recogidos"
+                + (thresholdPct > 0 ? " (se renueva al " + thresholdPct + "%)" : "");
+    }
+
     /** Ubicacion del botin activo mas cercano (null si no hay). */
     Location nearest(Location from) {
         Location best = null;
@@ -476,6 +517,8 @@ final class LootManager implements Listener {
 
     private void claim(Player p, Spot s) {
         if (!spots.remove(s)) return; // ya reclamado
+        collected++;
+        checkThreshold();
         unregister(s);
 
         Location l = s.loc.clone().add(0, 0.8, 0);

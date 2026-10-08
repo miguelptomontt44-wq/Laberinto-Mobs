@@ -26,15 +26,11 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.EntityPortalEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -64,6 +60,7 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
     private final LootManager loot = new LootManager(this);
     private final DifficultyManager diff = new DifficultyManager(this);
     private final Habilidades habilidades = new Habilidades(this);
+    private final PortalManager portals = new PortalManager(this);
     private final Map<UUID, Mob> mobs = new HashMap<>();
     private final Random rnd = new Random();
 
@@ -75,7 +72,6 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
     private double minDist, maxDist;
     private boolean protectFire = true;
     private boolean resetPortals = true;
-    private long lastPortalReset;
 
     @Override
     public void onEnable() {
@@ -87,11 +83,17 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(loot, this);
         habilidades.setLoot(loot);
+        getServer().getPluginManager().registerEvents(portals, this);
         getServer().getPluginManager().registerEvents(habilidades, this);
         var cmd = getCommand("laberinto");
         if (cmd != null) {
             cmd.setExecutor(this);
             cmd.setTabCompleter(this);
+        }
+        var lp = getCommand("lportal");
+        if (lp != null) {
+            lp.setExecutor(this);
+            lp.setTabCompleter(this);
         }
         var nivel = getCommand("nivel");
         if (nivel != null) nivel.setExecutor(this);
@@ -105,6 +107,7 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
     public void onDisable() {
         getServer().getScheduler().cancelTasks(this);
         diff.stop();
+        portals.shutdown();
         loot.removeAll();
         removeAll();
     }
@@ -115,6 +118,7 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
         loot.startTasks();
         diff.startTasks();
         habilidades.startTasks();
+        portals.start();
     }
 
     private void loadSettings() {
@@ -140,6 +144,7 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
 
         diff.load(c, zone);
         loot.load(c, zone);
+        portals.load(c, zone);
         loot.setLevelLookup(diff::levelOf);
         loot.setLevel(diff.level());
         habilidades.load(c);
@@ -379,39 +384,7 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
         loot.setLevel(lv);
         loot.regenerate();
         // los portales de salida tambien se reinician con el nivel nuevo
-        if (resetPortals) Bukkit.getScheduler().runTaskLater(this, () -> resetPortalsNow("cambio de dificultad"), 20L);
-    }
-
-    /** Reinicia los portales de salida (equivale a /lportal rotar). Funciona solo si LaberintoPortales esta instalado. */
-    private void resetPortalsNow(String reason) {
-        Plugin pp = Bukkit.getPluginManager().getPlugin("LaberintoPortales");
-        if (pp == null || !pp.isEnabled()) return;
-        long now = System.currentTimeMillis();
-        if (now - lastPortalReset < 10_000L) return; // evita repetirlo en rafaga
-        lastPortalReset = now;
-        getLogger().info("Reiniciando portales (" + reason + ")");
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "lportal rotar");
-    }
-
-    /**
-     * Red de seguridad: si un portal de salida "huerfano" (sin registrar) intenta mandar a alguien al End
-     * desde dentro del laberinto, se cancela y se reinician los portales.
-     */
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPortalPlayer(PlayerPortalEvent e) {
-        if (e.isCancelled() || zone == null) return;
-        if (e.getCause() != PlayerTeleportEvent.TeleportCause.END_PORTAL) return;
-        if (e.getFrom() == null || !zone.contains(e.getFrom())) return;
-        e.setCancelled(true);
-        msg(e.getPlayer(), "Ese portal estaba desactualizado; se reinicio. Intenta de nuevo en unos segundos.",
-                NamedTextColor.YELLOW);
-        resetPortalsNow("portal huerfano");
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPortalEntity(EntityPortalEvent e) {
-        if (e.isCancelled() || zone == null || e.getFrom() == null || !zone.contains(e.getFrom())) return;
-        if (e.getFrom().getBlock().getType() == Material.END_PORTAL) e.setCancelled(true);
+        if (resetPortals) Bukkit.getScheduler().runTaskLater(this, () -> portals.rotate(true), 20L);
     }
 
     // ---------------------------------------------------------------- comandos
@@ -426,8 +399,12 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
             diff.info(sender);
             return true;
         }
+        if (command.getName().equalsIgnoreCase("lportal")) {
+            portals.command(sender, args, 0);
+            return true;
+        }
         if (args.length == 0) {
-            msg(sender, "Uso: /laberinto <pos1|pos2|info|limpiar|dificultad|loot|reload>", NamedTextColor.YELLOW);
+            msg(sender, "Uso: /laberinto <pos1|pos2|info|limpiar|dificultad|loot|portal|reload>", NamedTextColor.YELLOW);
             return true;
         }
         switch (args[0].toLowerCase()) {
@@ -468,7 +445,8 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
                     msg(sender, "Zona: " + zone.world() + " (" + zone.x1() + "," + zone.y1() + "," + zone.z1()
                             + ") -> (" + zone.x2() + "," + zone.y2() + "," + zone.z2() + ")", NamedTextColor.AQUA);
                     msg(sender, "Mobs activos: " + mobs.size(), NamedTextColor.AQUA);
-                    msg(sender, "Botines activos: " + loot.count(), NamedTextColor.AQUA);
+                    msg(sender, "Botines activos: " + loot.count() + " - " + loot.progress(), NamedTextColor.AQUA);
+                    portals.info(sender);
                     diff.info(sender);
                 }
             }
@@ -477,20 +455,23 @@ public final class LaberintoMobs extends JavaPlugin implements Listener, TabExec
                 msg(sender, "Mobs del laberinto eliminados.", NamedTextColor.GREEN);
             }
             case "loot" -> loot.command(sender, args);
+            case "portal", "portales" -> portals.command(sender, args, 1);
             case "dificultad" -> diff.command(sender, args);
             case "reload" -> {
                 loadSettings();
                 startTask();
                 msg(sender, "Configuracion recargada.", NamedTextColor.GREEN);
             }
-            default -> msg(sender, "Uso: /laberinto <pos1|pos2|info|limpiar|dificultad|loot|reload>", NamedTextColor.YELLOW);
+            default -> msg(sender, "Uso: /laberinto <pos1|pos2|info|limpiar|dificultad|loot|portal|reload>", NamedTextColor.YELLOW);
         }
         return true;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1) return List.of("pos1", "pos2", "info", "limpiar", "dificultad", "loot", "reload");
+        if (command.getName().equalsIgnoreCase("lportal")) return portals.complete(args, 0);
+        if (args.length >= 1 && args[0].equalsIgnoreCase("portal")) return portals.complete(args, 1);
+        if (args.length == 1) return List.of("pos1", "pos2", "info", "limpiar", "dificultad", "loot", "portal", "reload");
         if (args.length == 2 && args[0].equalsIgnoreCase("loot"))
             return List.of("regenerar", "limpiar", "chances", "ubicaciones");
         if (args.length == 2 && args[0].equalsIgnoreCase("dificultad"))

@@ -1,12 +1,17 @@
 name: LaberintoMobs
-version: 1.4.1
+version: 1.5.0
 main: com.laberinto.LaberintoMobs
 api-version: '26.1'
-description: Mobs agresivos y botin aleatorio dentro de una zona (laberinto).
+description: 'Laberinto completo - mobs, botin, dificultad rotativa y portales.'
 commands:
   laberinto:
     description: Configura la zona del laberinto
-    usage: /laberinto <pos1|pos2|info|limpiar|dificultad|loot|reload>
+    usage: /laberinto <pos1|pos2|info|limpiar|dificultad|loot|portal|reload>
+    permission: laberinto.admin
+  lportal:
+    description: Portales del laberinto (igual que /laberinto portal)
+    usage: /lportal <pos1|pos2|crear|borrar|rotar|limpiar|info>
+    aliases: [laberintoportal]
     permission: laberinto.admin
   nivel:
     description: Muestra la dificultad actual del laberinto

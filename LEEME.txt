@@ -1,34 +1,49 @@
-LaberintoMobs 1.4.0 - plugin para Paper 26.x (Java 25)
+LABERINTO 1.5.0  -  UN SOLO PLUGIN (mobs + botin + dificultad + habilidades + portales)
+Paper 26.x / Java 25.  IMPORTANTE: BORRA LaberintoPortales.jar de plugins/ (ya viene incluido aqui).
 
-INSTALACION
-1) Sube el contenido de esta carpeta a tu GitHub y descarga el .jar compilado (Actions).
-2) Reemplaza el .jar viejo en "plugins" y COPIA el config.yml incluido
-   a plugins/LaberintoMobs/config.yml (ya trae tu zona). Reinicia.
-   (LaberintoPortales no necesita cambios: lee la zona de este mismo config.)
+======================== PUESTA EN MARCHA (orden) ========================
+1) Borra de plugins/:  LaberintoPortales.jar  y el LaberintoMobs viejo. Pon el LaberintoMobs-1.5.0.jar nuevo.
+2) Copia config.yml a plugins/LaberintoMobs/config.yml (ya trae tu zona). Reinicia el servidor.
+   - Tu portal de entrada actual se importa solo desde plugins/LaberintoPortales/estado.properties.
+   - Al iniciar se borran los portales de salida viejos sueltos y se generan salidas nuevas.
+3) Si tu portal de entrada NO se importo (la consola avisa), crealo:
+     /laberinto portal pos1     (mira el bloque de SUELO de una esquina y ejecuta)
+     /laberinto portal pos2     (esquina opuesta)
+     /laberinto portal crear
+4) Comprueba todo:  /laberinto info
 
-DIFICULTAD (cada 30 min, se avisa a todo el server)
-  /nivel                              -> ver nivel actual y tiempo (todos)
-  /laberinto dificultad facil|medio|dificil   -> forzar un nivel
-  /laberinto dificultad rotar         -> pasar al siguiente ya
-  /laberinto dificultad pausar|reanudar
-Cambia: mobs (tipos, cantidad, vida, fuerza), botin (cantidad y rareza) y
-recompensas por matar mobs (XP y drops extra).
+======================== ZONA DEL LABERINTO ========================
+/laberinto pos1                 esquina 1 (donde estas parado, en el suelo)
+/laberinto pos2                 esquina opuesta -> la zona queda guardada y activa
+/laberinto info                 zona, mobs, botines, dificultad y portales
+/laberinto reload               recarga config.yml
+/laberinto limpiar              borra los mobs
 
-BOTIN
-  /laberinto loot chances [facil|medio|dificil]   -> % reales
-  /laberinto loot regenerar | ubicaciones | limpiar
+======================== PORTALES (tambien funcionan como /lportal ...) ========================
+/laberinto portal pos1 | pos2   marca las esquinas del portal de entrada (mira el suelo)
+/laberinto portal crear         crea la entrada y genera las salidas
+/laberinto portal rotar         regenera las salidas ya
+/laberinto portal limpiar       busca y borra portales sueltos/rotos en todo el laberinto
+/laberinto portal info          entrada, salidas y proximo cambio
+/laberinto portal borrar        borra entrada y salidas
+- Cualquier cantidad de jugadores puede usar la entrada a la vez (el cooldown es por jugador).
+- Los portales cambian cada 20 min y TAMBIEN al cambiar la dificultad.
+- Cualquier portal del End dentro del laberinto que no este registrado se bloquea y se borra solo.
 
-HABILIDADES UNICAS
-Los items legendarios (y algunos epicos/raros) traen poderes. Se leen en el lore.
-Se asignan con  habilidad: <id>  en loot.items del config.
+======================== DIFICULTAD ========================
+/nivel                                         ver nivel y tiempo (todos)
+/laberinto dificultad facil|medio|dificil      forzar nivel
+/laberinto dificultad rotar                    pasar al siguiente
+/laberinto dificultad pausar | reanudar        congelar/seguir el reloj de 30 min
+Al cambiar: se avisa a TODO el server y se reinician mobs, cofres y portales.
 
-NOVEDADES 1.4.0
-- 186 items de botin, 32 habilidades unicas, mobs nuevos por dificultad.
-- Clic derecho: Espada del Vacio (salto) y Brujula del Tesoro (indica el botin mas cercano).
-- En DIFICIL los cofres legendarios salen ~3.5 veces mas que en MEDIO.
+======================== BOTIN ========================
+/laberinto loot chances [facil|medio|dificil]  probabilidades reales
+/laberinto loot regenerar                      cambia todos los cofres ya
+/laberinto loot ubicaciones                    coordenadas del botin activo
+/laberinto loot limpiar                        borra el botin
+Cofres nuevos: cada 10 min, o antes si se recoge el 70% (loot.regenerar-al-recolectar-porcentaje).
 
-1.4.1 - PORTALES
-Al cambiar la dificultad (comando o automatico) el plugin ejecuta solo "/lportal rotar":
-los portales de salida se regeneran con particulas. Ademas, si un portal de salida sin
-registrar intenta mandar a alguien al End desde dentro del laberinto, se cancela y se
-reinician los portales. Se apaga con dificultad.resetear-portales: false.
+======================== QUE EDITAR EN config.yml ========================
+dificultad.*   niveles, mobs y recompensas       portales.*   cantidad, tamano, tiempos, particulas
+loot.*         cantidad, items, pesos            habilidades.* poderes de armas y armaduras

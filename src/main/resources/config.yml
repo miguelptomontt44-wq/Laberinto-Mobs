@@ -1,4 +1,4 @@
-# ===== LaberintoMobs 1.4.1 =====
+# ===== LaberintoMobs 1.5.0 =====
 # La zona se configura con /laberinto pos1 y /laberinto pos2 (o editando estos numeros).
 # Despues: /laberinto reload
 zona:
@@ -111,6 +111,34 @@ dificultad:
       recompensa-mobs: {xp-multiplicador: 2.5, drop-chance: 0.10, drop-rareza-maxima: EPICO}
 
 # ===================================================================
+#  PORTALES (entrada fija + salidas que cambian de lugar)
+# ===================================================================
+# Antes era el plugin LaberintoPortales: ahora todo esta en este mismo plugin
+# (borra LaberintoPortales.jar). Comandos: /laberinto portal ...  (o /lportal ...)
+# Todos los jugadores pueden usar el portal de entrada a la vez.
+# Cada vez que cambia la dificultad las salidas tambien se regeneran.
+portales:
+  activo: true
+  limpiar-al-iniciar: true      # al arrancar borra portales de salida viejos que hayan quedado sueltos
+  entrada:
+    max-lado: 8                 # lado maximo del portal de entrada (en bloques)
+  salida:
+    cantidad-min: 3             # portales de salida a la vez (minimo)
+    cantidad-max: 4             # portales de salida a la vez (maximo)
+    tamano: 2                   # lado del portal de salida (2 = 2x2). Si el pasillo no da, baja solo a 1x1
+    rotar-minutos: 20           # cada cuanto cambian de lugar (ademas de al cambiar la dificultad)
+    aviso-segundos: 60          # aviso a los jugadores del laberinto antes de que cambien (0 = sin aviso)
+    separacion-minima: 20       # bloques minimos entre un portal de salida y otro
+    cooldown-segundos: 3        # espera por jugador tras teletransportarse
+  avanzado:
+    intentos-aleatorio: 500
+    intentos-salida: 250
+  particulas:
+    salida: true
+    entrada: true
+    intervalo-ticks: 5          # sube este numero para menos particulas
+
+# ===================================================================
 #  HABILIDADES UNICAS (armas y armaduras del laberinto)
 # ===================================================================
 # Los items con "habilidad:" en el loot tienen poderes especiales.
@@ -137,6 +165,8 @@ loot:
   distancia-visible: 48
   avisar-regeneracion: true
   anunciar-legendarios: true
+  regenerar-al-recolectar-porcentaje: 70   # si se recoge este % de los cofres, salen nuevos sin esperar (0 = desactivado)
+  regenerar-retraso-segundos: 5            # aviso y espera antes de generar los nuevos
 
   # peso = probabilidad relativa (mas alto = mas comun). Acepta decimales.
   # La probabilidad final depende del nivel: peso x multiplicador de rareza del nivel.
